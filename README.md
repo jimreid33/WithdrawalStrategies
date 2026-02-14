@@ -30,182 +30,161 @@ Each tab has a **Quick Presets** bar with five starting configurations:
 
 ---
 
-## Simulation Methods
-
-### Historical
-
-Start with a fixed real withdrawal monitoring the ratio of your current withdrawal to your current portfolio value. If that ratio drifts above an upper guardrail, you're withdrawing too much relative to what you have — cut spending. If it drifts below a lower guardrail, you're underspending — raise it. A floor prevents spending from ever falling below a set percentage of your initial amount.
-
-The effect: spending is stable for long stretches, punctuated by occasional step-changes when markets move significantly. The guardrail parameters (band width, cut/raise %) are all adjustable.
-
-### Fixed Real (The Original 4% Rule)
-
-The original 4% rule — the baseline everything else is measured against.
-
-### Forgo Inflation
-
-Morningstar's annual study approach — skip inflation adjustments after loss years.
-
-### Smoothed % (Yale)
-
-Institutional approach — blend prior spending with portfolio target. **Yale Approach** blends two anchors each year: (1) last year's spending adjusted for inflation, and (2) a target percentage of the current portfolio value. The smoothing weight controls the blend; means you're anchored to prior spending, responsive to the portfolio. This was designed for perpetual endowments but translates well to retirement. The smoothing weight is a direct dial on how aggressively spending tracks market reality versus maintaining stability.
-
-### Smoothed % (Vanguard)
-
-Targets a percentage of the current portfolio each year, but caps how much spending can change year over year (typically ±5% maximum increase, −2.5% maximum decrease). The result is similar to Yale but with hard guardrails on annual volatility rather than a blending weight.
-
-### Guardrails
-
-Withdraws a fraction of the portfolio each year based on remaining years (portfolio ÷ remaining horizon).
-
----
-
-## Understanding the Results
-
-### Survival Curves
-
-Survival curves show the percentage of simulations that still have money remaining at each year of retirement.
-
-### Percentile Fan Charts
-
-Fan charts show spending trajectories across simulations. The bands represent different outcome ranges:
-
-- **10th percentile** (green dashed): The optimistic scenario — only 10% of simulations did better
-- **25th percentile** (green solid): A good outcome
-- **50th percentile** (blue, thick): The middle outcome — half did better, half did worse
-- **75th percentile** (orange solid): A below-average outcome
-- **90th percentile** (red dashed): The pessimistic scenario — only 10% did worse
-
-A wide fan means high uncertainty. A narrow fan means the strategy produces more predictable outcomes, for better or worse.
-
----
-
-## Strategy Details
+## Strategy Descriptions
 
 ### Fixed Real
 
-Start with a fixed real withdrawal amount and increase it with inflation each year. If the portfolio runs out, spending drops to zero.
+Start with a fixed real withdrawal — at that rate, draw the ratio of your current withdrawal to your current portfolio value. Up that rate if drift above; lower if drift below. Lower and single digits: You're withdrawing too much relative to what you have, cut back. The spending cut is real and single-year: Don't drag three random back years.
 
-### Forgo Inflation
-
-Like Fixed Real, but skip inflation adjustments in years when the portfolio loses value (negative returns).
-
-### Smoothed Percentage Approaches
-
-Two models sharing a common philosophy — let spending track the portfolio, but smooth the ride.
-
-**Yale Approach** blends two anchors each year — (1) last year's spending adjusted for inflation, and (2) a target percentage of the current portfolio value. The smoothing weight controls the blend: means you're anchored to prior spending, responsive to the portfolio. This was designed for perpetual endowments but translates well to retirement. The smoothing weight is a direct dial on how aggressively spending tracks market reality versus maintaining stability.
-
-**Vanguard Approach** targets a percentage of the current portfolio each year, but caps how much spending can change year over year (typically ±5% maximum increase, −2.5% maximum decrease). The result is similar to Yale but with hard guardrails on annual volatility rather than a blending weight.
+This replicates William Bengen's historical cohort-year analysis. It works well for long stretches, punctuated by occasional step-changes when markets move significantly. The guardrail parameters (bandwidth, cut/raise size) are all adjustable.
 
 ### Guardrails
 
-Start with a fixed real withdrawal monitoring the ratio of your current withdrawal to your current portfolio value. If that ratio drifts above an upper guardrail, you're withdrawing too much relative to what you have — cut spending. If it drifts below a lower guardrail, you're underspending — raise it. A floor prevents spending from ever falling below a set percentage of your initial amount.
+Start with a fixed percent withdrawal at your initial age, cap spend moves (typically max increase ±X%, max decrease Y%). Floor prevents spending from ever falling below a set percentage of your initial amount.
 
-The effect: spending is stable for long stretches, punctuated by occasional step-changes when markets move significantly. The guardrail parameters (band width, cut/raise %) are all adjustable.
+Guardrails combine two anchors — an spending floor to avoid catastrophic declines, and volatility caps to smooth the ride. This was designed for perpetual endowments but translates well to retirement. The smoothing weight is a direct dial on how aggressively spending tracks market reality versus maintaining stability.
 
----
+### Smoothed % (Yale / Vanguard)
 
-## Monte Carlo Methods
+Two models sharing a common philosophy — let spending track the portfolio, but smooth the ride.
 
-The tool includes five Monte Carlo approaches:
+**Yale Model** blends two anchors each year — X% last year's spending adjusted for inflation, and Y% a target percentage of the current portfolio value. The smoothing weight controls the blend: mean's you're anchored to prior spending, responsive to the portfolio. This was designed for perpetual endowments but translates well to retirement. The smoothing weight is a direct dial on how aggressively spending tracks market reality versus maintaining stability.
 
-1. **Bengen (i.i.d.)** — Independent draws, the standard textbook Monte Carlo
-2. **Smoothed (Block Bootstrap)** — Draws 5-year blocks to preserve autocorrelation
-3. **Smoothed (Vanguard)** — Matches historical autocorrelation structure  
-4. **Narrative Monte Carlo** — Preserves regime coherence using historical episode sequences
-5. **Fitted (ARMA)** — Time series model fit to historical data
+**Vanguard Model** targets a percentage of the current portfolio each year, but caps how much spending can change year over year (typically ±X% maximum increase, Y% maximum decrease). The result is similar to Yale but with hard guardrails on annual volatility rather than a blending weight.
 
-### Why Multiple Methods?
+### Percentage of Portfolio
 
-Markets exhibit both **macro dynamics** (regime shifts, crises, bear/bull environments) and **micro dynamics** (within-episode returns, inflation, cross-asset behavior).
+Withdraws a fraction of the portfolio each year based on remaining years (portfolio ÷ remaining horizon).
+### Forgo Inflation
 
-- **i.i.d.** doesn't draw three random bag years as it really happened
-- It draws, say, the 2008–2009 financial crisis as a coherent unit
-- **Narrative MC** produces success rates slightly higher than standard i.i.d. (reflecting the mean reversion premium that real markets exhibit)
-
-At moderate withdrawal rates (around 4–4.5%), Narrative MC typically produces success rates slightly higher than standard i.i.d. At higher rates, the differences are more pronounced because the specific sequencing of crash + recovery matters more.
+Morningstar's research approach. Like Fixed Real but with one twist — in years when the portfolio loses money, skip the inflation adjustment that year. The result is steady spending most of the time, with small real cuts during bear markets.
 
 ---
 
-## Interpreting Results
+## Simulation Methods
+
+### Historical Cohorts (1926–2024)
+
+Uses actual market returns from 1926 through 2024 — 99 overlapping 30-year periods. For instance, someone retiring in 1966 experienced the stagflation of the 1970s; someone retiring in 2000 experienced the dot-com crash and 2008 crisis.
+
+### Monte Carlo (5 Methods)
+
+#### Standard Monte Carlo
+Random draws from historical return distributions. Each simulation is independent.
+
+#### Resampling Monte Carlo
+Samples without replacement from the historical record — ensures each 30-year simulation uses 30 different actual years.
+
+#### Block Bootstrap
+Preserves multi-year patterns by sampling consecutive blocks of years (e.g., 5-year sequences) instead of individual years.
+
+#### Autocorrelated Monte Carlo
+Models the tendency of markets to exhibit momentum and mean reversion by adjusting correlations between consecutive years.
+
+#### Narrative Monte Carlo (New)
+Samples complete 30-year market sequences from history (1926-1956, 1927-1957, etc.), preserving the exact sequence of bull markets, bear markets, inflation shocks, and recovery periods that actually occurred together.
+
+---
+
+## Key Findings
+
+### The Gaps
+
+**Historical vs Standard MC:** Historical cohorts show about 4% safe withdrawal rate. Standard Monte Carlo typically suggests 3.8–4.2%, but with different failure patterns. Historical shows concentrated failures in specific cohorts (1960s, 2000s); Monte Carlo shows more evenly distributed failures across simulations.
+
+**Standard MC vs Narrative MC:** Standard Monte Carlo can generate scenarios that never happened — like a 15-year bull market followed immediately by a 10-year bear market. Narrative MC only uses sequences that actually occurred, which typically produces success rates slightly higher than standard MC but lower than cherry-picking only the best historical periods.
+
+### Spending Stability vs. Longevity
+
+The core tradeoff: strategies that keep spending stable (like Fixed Real with strict guardrails) maximize longevity but can require sharp spending cuts during severe market downturns. Strategies that tie spending to portfolio value (like Percentage of Portfolio or smoothed strategies) provide more responsive spending adjustments but risk undershooting or overshooting depending on market timing.
+
+### The 4% Rule's Legacy
+
+Bengen's original 4% rule (Fixed Real at 4%, 50/50 allocation, 30-year horizon) succeeded in 96% of historical periods. Modern research generally supports this, though some argue for 3.8% to be more conservative, while others argue that flexible strategies enable higher safe withdrawal rates.
+
+---
+
+## Understanding the Metrics
 
 ### Success Rate
+Percentage of simulations where the portfolio lasted the full 30-year period.
 
-The percentage of simulations that never ran out of money.
+### Median End Balance
+The middle outcome — half of simulations ended with more, half with less.
 
-### Outcome Distribution
+### 10th/90th Percentile End Balance
+Shows the range of outcomes — the 10th percentile is the outcome that did worse than 90% of simulations (useful for understanding downside risk), and the 90th percentile shows upside potential.
 
-Five lines showing how outcomes spread across simulations:
+### Spending Volatility
+Standard deviation of year-over-year spending changes. Lower values mean more predictable spending.
 
-- **Green dashed**: The optimistic scenario
-- **Green solid**: A good outcome  
-- **Blue (thick)**: The middle outcome
-- **Orange solid**: A below-average outcome
-- **Red dashed**: The pessimistic scenario
-
-### Historical vs. Monte Carlo
-
-When comparing Historical and Monte Carlo results, remember:
-
-- **Historical** shows what actually happened across all starting years in the dataset
-- **Monte Carlo** shows what could happen under randomized market sequences
-- The gap between them reveals how sensitive your strategy is to sequence risk
+### Worst Drawdown
+The largest peak-to-trough decline in portfolio value experienced during the simulations.
 
 ---
 
-## Data & Methodology
+## Educational Use & Research
 
-### Data Sources
+This tool is designed for:
 
-- **U.S. Stocks**: Ibbotson/Morningstar SBBI Large Cap data (1926–2024)
-- **U.S. Bonds**: Ibbotson Intermediate-Term Government Bonds
-- **Inflation**: CPI-U
+- Understanding the mathematics of retirement planning without the complexity of full financial planning software
+- Academic research on withdrawal strategies and Monte Carlo methodology
+- Helping individuals understand the tradeoffs between spending flexibility and portfolio longevity
+- Comparing how different simulation methods affect perceived safe withdrawal rates
 
-### Rebalancing
-
-Annual rebalancing to maintain target allocation.
-
-### Fees & Taxes
-
-Not modeled. This is a gross returns analysis.
+**This is not financial advice.** Real retirement planning requires consideration of Social Security, pensions, taxes, healthcare costs, legacy goals, and many other factors this tool does not model.
 
 ---
 
 ## Technical Notes
 
-### Portfolio Construction
+### Historical Data
+- U.S. stock returns: S&P 500 (or equivalent pre-1957)
+- U.S. bond returns: Intermediate-term government bonds
+- Inflation: CPI-U
+- Data source: Annual returns from 1926–2024
 
-Portfolios are specified as stock/bond allocations (e.g., 60/40, 50/50). All returns are real (inflation-adjusted).
+### Simulation Parameters
+- Default portfolio: 50% stocks, 50% bonds (adjustable)
+- Default time horizon: 30 years (adjustable)
+- Default withdrawal rate: 4% of initial portfolio (adjustable)
+- Number of Monte Carlo simulations: 10,000 per run
 
-### Simulation Length
-
-Default retirement horizon is 30 years. Configurable up to 40 years.
-
-### Random Seeds
-
-Results are deterministic given the same configuration and seed. Seeds can be adjusted for reproducibility.
-
----
-
-## References
-
-**Bengen, W. P. (1994).** "Determining Withdrawal Rates Using Historical Data." *Journal of Financial Planning.*
-
-**Pfau, W. (2011).** "Can We Predict the Sustainable Withdrawal Rate for New Retirees?" *Journal of Financial Planning.*
-
-**Blanchett, D. & Frank, L. (2009).** "Revisit Switches in Interest Rates." *Journal of Business & Economic Statistics.*
-
-**Fitzpatrick, J. & Sharp, M. (2020).** "Evaluating Monte Carlo Models for Retirement Planning Forecast Accuracy." *Income Lab at HI2.com.*
+### Rebalancing
+All strategies assume annual rebalancing back to target allocation.
 
 ---
 
-## About This Tool
+## References & Further Reading
 
-This simulator was created to make retirement withdrawal research accessible to everyone. It's open-source, transparent, and designed for exploration. Whether you're a researcher testing new strategies, a practitioner comparing approaches, or someone planning their own retirement, this tool gives you the data and frameworks to understand the tradeoffs.
+**Bengen, W. (1994).** "Determining Withdrawal Rates Using Historical Data," *Journal of Financial Planning*.
 
-**Not financial advice.** Always consult a qualified financial advisor for personalized retirement planning guidance.
+**Pfau, W. & Kitces, M. (2014).** "Reduce Volatility to Improve Retirement Outcomes: The Efficient Frontier of Spending Volatility and Initial Real Retirement Income."
+
+**Blanchett, D., Finke, M., & Pfau, W. (2013).** "Low Bond Yields and Safe Portfolio Withdrawal Rates," *Journal of Financial Planning*.
+
+**Milevsky, M. & Huang, H. (2011).** "Spending Retirement on Planet Vulcan: The Impact of Longevity Risk Aversion on Optimal Withdrawal Rates."
+
+**Cooley, P., Hubbard, C., & Walz, D. (2003).** "A Comparative Analysis of Retirement Portfolio Success Rates: Simulation versus Overlapping Periods."
 
 ---
 
-*Last updated: February 2026*
+## License
+
+MIT License - See LICENSE file for details.
+
+---
+
+## Contributing
+
+Contributions are welcome! Please see SETUP.md for development setup instructions.
+
+For bugs, feature requests, or questions, please open an issue on GitHub.
+
+---
+
+## Acknowledgments
+
+This project builds on decades of research in retirement income planning, particularly the foundational work of William Bengen, the ongoing research at Morningstar and Vanguard, and the academic contributions of Wade Pfau, Michael Kitces, David Blanchett, and many others.
+
+The Narrative Monte Carlo methodology is an original contribution designed to address limitations in both pure historical backtesting and standard Monte Carlo simulation.

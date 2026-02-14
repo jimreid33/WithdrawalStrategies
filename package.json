@@ -1,8 +1,8 @@
 {
   "name": "retirement-withdrawal-simulator",
+  "private": true,
   "version": "1.0.0",
-  "description": "Open-source retirement withdrawal strategy simulator with 5 Monte Carlo methods and 5 configurable strategies. Replicates Bengen (1994), implements Morningstar/Kitces approaches, and introduces Narrative Monte Carlo.",
-  "private": false,
+  "description": "Open-source retirement withdrawal strategy simulator with 5 Monte Carlo methods. Replicates Bengen (1994), Morningstar, and Kitces/Income Lab approaches.",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,29 +10,17 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "recharts": "^2.12.0"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.12.7"
   },
   "devDependencies": {
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
-    "@vitejs/plugin-react": "^4.2.0",
-    "autoprefixer": "^10.4.0",
-    "postcss": "^8.4.0",
-    "tailwindcss": "^3.4.0",
-    "typescript": "^5.3.0",
-    "vite": "^5.0.0"
-  },
-  "keywords": [
-    "retirement",
-    "withdrawal-rate",
-    "4-percent-rule",
-    "monte-carlo",
-    "bengen",
-    "fire",
-    "financial-planning",
-    "simulation"
-  ],
-  "license": "MIT"
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.4",
+    "vite": "^5.3.1"
+  }
 }
