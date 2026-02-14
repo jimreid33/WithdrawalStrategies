@@ -1,3 +1,4 @@
+import React from 'react'
 import { useState, useMemo, useCallback } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, BarChart, Bar, CartesianGrid, Legend, ReferenceLine, ComposedChart } from "recharts";
 
