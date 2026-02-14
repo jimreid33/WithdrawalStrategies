@@ -10,25 +10,6 @@ Built for hobbyists, researchers, and anyone who wants to understand the tradeof
 
 ---
 
-## Quick Start
-
-### Guided Tour
-
-Click the **Guided Tour** button in the top-right corner. The tour walks you through Bengen's discovery, the gap between historical and Monte Carlo results, Narrative Monte Carlo, and the strategy comparison framework — five steps that take about five minutes and leave you ready to explore on your own.
-
-### Strategy Presets
-
-Each tab has a **Quick Presets** bar with five starting configurations:
-
-| Preset | Strategy | Rate | Allocation | What It Tests |
-|--------|----------|------|------------|---------------|
-| **Bengen Classic** | Fixed Real | 4% | 50/50 | The original 4% rule — the baseline everything else is measured against |
-| **Morningstar** | Forgo Inflation | 3.8% | 50/50 | Morningstar's annual study approach — skip inflation adjustments after loss years |
-| **Yale Endowment** | Smoothed % (Yale) | 5% | 70/30 | Institutional approach — blend prior spending with portfolio target |
-| **Vanguard Dynamic** | Smoothed % (Vanguard) | 5% | 60/40 | Capped annual spending changes (±5%/−2.5%) |
-| **Growth + Rails** | Guardrails | 5% | 80/20 | Aggressive equity with guardrail protection |
-
----
 
 ## Strategy Descriptions
 
@@ -83,24 +64,6 @@ Models the tendency of markets to exhibit momentum and mean reversion by adjusti
 
 #### Narrative Monte Carlo (New)
 Samples complete 30-year market sequences from history (1926-1956, 1927-1957, etc.), preserving the exact sequence of bull markets, bear markets, inflation shocks, and recovery periods that actually occurred together.
-
----
-
-## Key Findings
-
-### The Gaps
-
-**Historical vs Standard MC:** Historical cohorts show about 4% safe withdrawal rate. Standard Monte Carlo typically suggests 3.8–4.2%, but with different failure patterns. Historical shows concentrated failures in specific cohorts (1960s, 2000s); Monte Carlo shows more evenly distributed failures across simulations.
-
-**Standard MC vs Narrative MC:** Standard Monte Carlo can generate scenarios that never happened — like a 15-year bull market followed immediately by a 10-year bear market. Narrative MC only uses sequences that actually occurred, which typically produces success rates slightly higher than standard MC but lower than cherry-picking only the best historical periods.
-
-### Spending Stability vs. Longevity
-
-The core tradeoff: strategies that keep spending stable (like Fixed Real with strict guardrails) maximize longevity but can require sharp spending cuts during severe market downturns. Strategies that tie spending to portfolio value (like Percentage of Portfolio or smoothed strategies) provide more responsive spending adjustments but risk undershooting or overshooting depending on market timing.
-
-### The 4% Rule's Legacy
-
-Bengen's original 4% rule (Fixed Real at 4%, 50/50 allocation, 30-year horizon) succeeded in 96% of historical periods. Modern research generally supports this, though some argue for 3.8% to be more conservative, while others argue that flexible strategies enable higher safe withdrawal rates.
 
 ---
 
