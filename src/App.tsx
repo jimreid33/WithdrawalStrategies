@@ -1,4 +1,3 @@
-import React from 'react'
 import { useState, useMemo } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, BarChart, Bar, CartesianGrid, Legend, ReferenceLine, ComposedChart } from "recharts";
 
@@ -14,18 +13,13 @@ function classR(s){return s<=-.20?0:s<=-.05?1:s<=.15?2:3;}
 const REG=STK.map(classR);
 function buildRM(){const tr=Array.from({length:4},()=>new Array(4).fill(0)),po=Array.from({length:4},()=>[]);for(let i=0;i<NY;i++){po[REG[i]].push(i);if(i>0)tr[REG[i-1]][REG[i]]++;}const tp=tr.map(r=>{const s=r.reduce((a,b)=>a+b,0);return s>0?r.map(v=>v/s):r.map(()=>.25);});return{tp,po};}
 const RM=buildRM();
-
 const CN=["Low CAPE (<15)","Mid CAPE (15–25)","High CAPE (>25)"],CC=["#22c55e","#f59e0b","#ef4444"];
 function classC(c){return c<15?0:c<=25?1:2;}
-const CREG=CAPE.map(classC);
-const CAPE_HORIZON=10;
+const CREG=CAPE.map(classC);const CAPE_HORIZON=10;
 function buildCPools(){const p=[[],[],[]];for(let i=0;i<NY-CAPE_HORIZON;i++)p[CREG[i]].push(i);return p;}
-const CP=buildCPools();
-const DEFAULT_CAPE=classC(CAPE[NY-1]);
-
+const CP=buildCPools();const DEFAULT_CAPE=classC(CAPE[NY-1]);
 function findEpisodes(){const eps=Array.from({length:4},()=>[]);let cur=REG[0],st=0;for(let i=1;i<=NY;i++){if(i===NY||REG[i]!==cur){eps[cur].push({start:st,len:i-st});if(i<NY){cur=REG[i];st=i;}}}return eps;}
 const EPISODES=findEpisodes();
-
 function mkRng(seed){let s=seed|0;return()=>{s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 
 function calcW(y,port,prevW,iW,rate,strat,sp,inf,ci,pRet){
@@ -33,14 +27,9 @@ function calcW(y,port,prevW,iW,rate,strat,sp,inf,ci,pRet){
   if(strat==="forgo"){if(y===0)return iW;return pRet<0?prevW:prevW*(1+inf);}
   if(strat==="guardrails"){if(y===0)return iW;let w=prevW*(1+inf),cur=w/port;if(cur>rate*(1+sp.band))w*=(1-sp.cut);else if(cur<rate*(1-sp.band))w*=(1+sp.raise);if(sp.floor>0)w=Math.max(w,iW*sp.floor*ci);return w;}
   if(strat==="rmd")return sp.rem>0?port/sp.rem:port;
-  if(strat==="smoothed"){
-    if(y===0)return port*rate;
-    if(sp.mode==="yale")return sp.wt*prevW*(1+inf)+(1-sp.wt)*rate*port;
-    const base=rate*port;return Math.max(prevW*(1-sp.fl),Math.min(prevW*(1+sp.cl),base));
-  }
+  if(strat==="smoothed"){if(y===0)return port*rate;if(sp.mode==="yale")return sp.wt*prevW*(1+inf)+(1-sp.wt)*rate*port;const base=rate*port;return Math.max(prevW*(1-sp.fl),Math.min(prevW*(1+sp.cl),base));}
   return iW;
 }
-
 function simHist(si,p0,rate,alloc,hz,strat,sp){
   let port=p0,w=0,iW=p0*rate,ci=1,pRet=0;
   const path=[{yr:0,port:p0,pR:p0,w:0,wR:0,sR:0,bR:0,inf:0,reg:-1,cape:CAPE[si]}];
@@ -52,7 +41,6 @@ function simHist(si,p0,rate,alloc,hz,strat,sp){
     path.push({yr:y+1,port,pR:port/ci,w,wR:w/ci,sR:STK[di],bR:BND[di],inf:INF[di],reg:REG[di],cape:CAPE[di]});}
   return{ok:true,path,failYr:null};
 }
-
 function runMC(p0,rate,alloc,hz,strat,sp,nSims,genFn){
   return Array.from({length:nSims},(_,si)=>{const gen=genFn(si);let port=p0,w=0,iW=p0*rate,ci=1,failed=false,pRet=0;
     const path=[{yr:0,port:p0,pR:p0,w:0,wR:0}];
@@ -61,7 +49,6 @@ function runMC(p0,rate,alloc,hz,strat,sp,nSims,genFn){
       if(port<=0){path.push({yr:y+1,port:0,pR:0,w,wR:w/ci,failed:true});failed=true;break;}
       pRet=alloc*sR+(1-alloc)*bR;port*=(1+pRet);path.push({yr:y+1,port,pR:port/ci,w,wR:w/ci});}
     return{ok:!failed,path};});}
-
 function genIID(rng){return()=>()=>{const i=Math.floor(rng()*NY);return{sR:STK[i],bR:BND[i],inf:INF[i]};};}
 function genBlock(rng,bs){return()=>{let bS=-1,bP=bs;return()=>{if(bP>=bs){bS=Math.floor(rng()*(NY-bs));bP=0;}const i=bS+bP++;return{sR:STK[i],bR:BND[i],inf:INF[i]};};};}
 function genRegime(rng){const{tp,po}=RM;return()=>{let cr=REG[Math.floor(rng()*NY)];return()=>{const r=rng();let cum=0;for(let j=0;j<4;j++){cum+=tp[cr][j];if(r<cum){cr=j;break;}}const pool=po[cr],i=pool[Math.floor(rng()*pool.length)];return{sR:STK[i],bR:BND[i],inf:INF[i]};};};}
@@ -71,14 +58,10 @@ function genNarrative(rng){const{tp}=RM;return()=>{let cr=REG[Math.floor(rng()*N
 function pct(arr,p){const s=[...arr].sort((a,b)=>a-b);const i=(s.length-1)*p;const lo=Math.floor(i);return s[lo]+(s[Math.min(lo+1,s.length-1)]-s[lo])*(i-lo);}
 const fmt=v=>v>=1e6?`$${(v/1e6).toFixed(2)}M`:v>=1e3?`$${(v/1e3).toFixed(0)}K`:`$${Math.round(v)}`;
 const fP=v=>`${(v*100).toFixed(1)}%`;
-const TABS=["Historical (Bengen)","Monte Carlo","Compare Strategies"];
-const MC_MODES=[
-  {id:"iid",label:"Standard (i.i.d.)",desc:"Independent sampling — Morningstar comparable"},
-  {id:"block",label:"Block Bootstrap",desc:"Contiguous blocks — preserves serial correlation"},
-  {id:"regime",label:"Regime-Switching",desc:"Markov chain on bull/bear/crisis/normal"},
-  {id:"cape",label:"CAPE-Conditioned",desc:"First decade from similar valuations, then unconditional (Kitces/Income Lab)"},
-  {id:"narrative",label:"Narrative MC",desc:"Regime transitions + coherent historical episodes"},
-];
+function buildPct(results,hz,pk,wk){return Array.from({length:hz+1},(_,y)=>{const pv=results.map(r=>(r.path[Math.min(y,r.path.length-1)]?.[pk]??0));const wv=results.filter(r=>r.path[y]?.[wk]>0).map(r=>r.path[y][wk]);return{yr:y,p5:pct(pv,.05),p25:pct(pv,.25),p50:pct(pv,.5),p75:pct(pv,.75),p95:pct(pv,.95),w5:wv.length?pct(wv,.05):0,w50:wv.length?pct(wv,.5):0,w95:wv.length?pct(wv,.95):0};});}
+function sVol(path,wk){const ws=path.filter(s=>s[wk]>0).map(s=>s[wk]);if(ws.length<2)return 0;const mu=ws.reduce((a,b)=>a+b,0)/ws.length;return Math.sqrt(ws.reduce((a,b)=>a+(b-mu)**2,0)/(ws.length-1))/mu;}
+function mkSmSp(mode,wt,cl,fl){return mode==="yale"?{mode,wt:wt/100}:{mode,cl:cl/100,fl:fl/100};}
+
 const CS=[
   {id:"fixed",label:"Fixed Real",color:"#3b82f6",bg:"bg-blue-900 text-blue-300"},
   {id:"forgo",label:"Forgo Inflation",color:"#06b6d4",bg:"bg-cyan-900 text-cyan-300"},
@@ -88,20 +71,14 @@ const CS=[
 ];
 const CSM=Object.fromEntries(CS.map(s=>[s.id,s]));
 
-function buildPct(results,hz,pk,wk){return Array.from({length:hz+1},(_,y)=>{const pv=results.map(r=>(r.path[Math.min(y,r.path.length-1)]?.[pk]??0));const wv=results.filter(r=>r.path[y]?.[wk]>0).map(r=>r.path[y][wk]);return{yr:y,p5:pct(pv,.05),p25:pct(pv,.25),p50:pct(pv,.5),p75:pct(pv,.75),p95:pct(pv,.95),w5:wv.length?pct(wv,.05):0,w50:wv.length?pct(wv,.5):0,w95:wv.length?pct(wv,.95):0};});}
-function sVol(path,wk){const ws=path.filter(s=>s[wk]>0).map(s=>s[wk]);if(ws.length<2)return 0;const mu=ws.reduce((a,b)=>a+b,0)/ws.length;return Math.sqrt(ws.reduce((a,b)=>a+(b-mu)**2,0)/(ws.length-1))/mu;}
-
 function Sl({label,value,onChange,min,max,step,f}){return(<div className="flex flex-col gap-0.5"><div className="flex justify-between text-xs"><span className="text-gray-400">{label}</span><span className="text-white font-mono">{f?f(value):value}</span></div><input type="range" min={min} max={max} step={step} value={value} onChange={e=>onChange(+e.target.value)} className="w-full accent-blue-500" style={{height:16}}/></div>);}
 function Badge({name}){const s=CSM[name];if(!s)return null;return(<span className={`px-2 py-0.5 rounded text-xs font-medium ${s.bg}`}>{s.label}</span>);}
 function GrIn({band,cut,raise,floor,set}){return(<div className="space-y-1 pt-1"><Sl label="Band" value={band} onChange={v=>set("band",v)} min={5} max={50} step={5} f={v=>`±${v}%`}/><Sl label="Cut" value={cut} onChange={v=>set("cut",v)} min={5} max={25} step={5} f={v=>`${v}%`}/><Sl label="Raise" value={raise} onChange={v=>set("raise",v)} min={5} max={25} step={5} f={v=>`${v}%`}/><Sl label="Floor" value={floor} onChange={v=>set("floor",v)} min={0} max={100} step={5} f={v=>`${v}%`}/></div>);}
-function SmIn({mode,setMode,rate,setRate,wt,setWt,cl,setCl,fl,setFl}){return(<div className="space-y-1 pt-1">
+function SmIn({mode,setMode,wt,setWt,cl,setCl,fl,setFl}){return(<div className="space-y-1 pt-1">
   <div className="flex gap-1"><button onClick={()=>setMode("yale")} className={`flex-1 py-1 rounded text-xs font-medium ${mode==="yale"?"bg-purple-600 text-white":"bg-gray-700 text-gray-400"}`}>Yale</button><button onClick={()=>setMode("vanguard")} className={`flex-1 py-1 rounded text-xs font-medium ${mode==="vanguard"?"bg-purple-600 text-white":"bg-gray-700 text-gray-400"}`}>Vanguard</button></div>
-  <Sl label="Target Rate" value={rate} onChange={setRate} min={3} max={8} step={0.5} f={v=>`${v}%`}/>
   {mode==="yale"?<Sl label="Smoothing Weight" value={wt} onChange={setWt} min={50} max={95} step={5} f={v=>`${v}% prior`}/>:
   <><Sl label="Max Increase" value={cl} onChange={setCl} min={1} max={15} step={0.5} f={v=>`+${v}%`}/><Sl label="Max Decrease" value={fl} onChange={setFl} min={1} max={10} step={0.5} f={v=>`-${v}%`}/></>}
 </div>);}
-function StratSelect({strat,setStrat}){return(<select value={strat} onChange={e=>setStrat(e.target.value)} className="w-full mt-0.5 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs text-white">
-  <option value="fixed">Fixed Real (Bengen)</option><option value="forgo">Forgo Inflation (Morningstar)</option><option value="guardrails">Guardrails</option><option value="smoothed">Smoothed % (Yale/Vanguard)</option><option value="rmd">RMD-Based</option></select>);}
 const TT=({active,payload,label})=>{if(!active||!payload?.length)return null;return(<div className="bg-gray-900 border border-gray-700 rounded-lg p-2 text-xs shadow-lg max-w-xs"><div className="text-gray-400 mb-1">Year {label}</div>{payload.filter(p=>p.value!=null).map((p,i)=>(<div key={i} className="flex justify-between gap-3"><span style={{color:p.color||p.stroke}}>{p.name}</span><span className="font-mono text-white">{typeof p.value==="number"?(Math.abs(p.value)<2&&Math.abs(p.value)>0.0001?fP(p.value):fmt(p.value)):p.value}</span></div>))}</div>);};
 function PctChart({data,pk,h}){return(<ResponsiveContainer width="100%" height={h||220}><LineChart data={data}><CartesianGrid strokeDasharray="3 3" stroke="#374151"/><XAxis dataKey="yr" tick={{fill:"#9ca3af",fontSize:10}}/><YAxis tick={{fill:"#9ca3af",fontSize:10}} tickFormatter={fmt}/><Tooltip content={<TT/>}/><Line type="monotone" dataKey={`${pk}95`} stroke="#22c55e" strokeWidth={1} strokeDasharray="4 4" dot={false} name="95th"/><Line type="monotone" dataKey={`${pk}75`} stroke="#22c55e" strokeWidth={1.5} dot={false} name="75th"/><Line type="monotone" dataKey={`${pk}50`} stroke="#3b82f6" strokeWidth={2.5} dot={false} name="Median"/><Line type="monotone" dataKey={`${pk}25`} stroke="#f97316" strokeWidth={1.5} dot={false} name="25th"/><Line type="monotone" dataKey={`${pk}5`} stroke="#ef4444" strokeWidth={1} strokeDasharray="4 4" dot={false} name="5th"/><ReferenceLine y={0} stroke="#6b7280"/><Legend wrapperStyle={{fontSize:10}}/></LineChart></ResponsiveContainer>);}
 
@@ -112,7 +89,7 @@ function YearDetail({period:p,hz,real,onClose}){
   return(<div className="bg-gray-800 rounded-lg p-3 space-y-2 border border-gray-600">
     <div className="flex justify-between items-center"><div className="flex items-center gap-2 flex-wrap">
       <h3 className="text-sm font-bold text-white">Retiree: {p.startYear}</h3>
-      <span className={`text-xs px-2 py-0.5 rounded font-medium ${p.ok?"bg-green-900 text-green-400":"bg-red-900 text-red-400"}`}>{p.ok?`Survived — ${fmt(tv)}`:`Failed yr ${p.failYr}`}</span>
+      <span className={`text-xs px-2 py-0.5 rounded font-medium ${p.ok?"bg-green-900 text-green-400":"bg-red-900 text-red-400"}`}>{p.ok?`Survived – ${fmt(tv)}`:`Failed yr ${p.failYr}`}</span>
       <span className="text-xs text-gray-500">CAPE: {CAPE[p.startYear-Y0]?.toFixed(1)}</span>
     </div><button onClick={onClose} className="text-gray-500 hover:text-white text-base px-1">✕</button></div>
     <div className="grid grid-cols-4 gap-2 text-center text-xs">
@@ -125,7 +102,7 @@ function YearDetail({period:p,hz,real,onClose}){
       <div><div className="text-xs text-gray-500 mb-0.5">Portfolio ({real?"Real":"Nom"})</div><ResponsiveContainer width="100%" height={140}><AreaChart data={data}><CartesianGrid strokeDasharray="3 3" stroke="#374151"/><XAxis dataKey="yr" tick={{fill:"#9ca3af",fontSize:9}}/><YAxis tick={{fill:"#9ca3af",fontSize:9}} tickFormatter={fmt}/><Tooltip content={<TT/>}/><Area type="monotone" dataKey="port" stroke="#3b82f6" fill="#3b82f6" fillOpacity={.15} name="Portfolio" strokeWidth={2}/><ReferenceLine y={0} stroke="#6b7280"/></AreaChart></ResponsiveContainer></div>
       <div><div className="text-xs text-gray-500 mb-0.5">Spending ({real?"Real":"Nom"})</div><ResponsiveContainer width="100%" height={140}><AreaChart data={data.slice(1)}><CartesianGrid strokeDasharray="3 3" stroke="#374151"/><XAxis dataKey="yr" tick={{fill:"#9ca3af",fontSize:9}}/><YAxis tick={{fill:"#9ca3af",fontSize:9}} tickFormatter={fmt}/><Tooltip content={<TT/>}/><Area type="monotone" dataKey="w" stroke="#f59e0b" fill="#f59e0b" fillOpacity={.15} name="Spending" strokeWidth={2}/></AreaChart></ResponsiveContainer></div>
     </div>
-    <div><div className="text-xs text-gray-500 mb-0.5">Returns by regime: <span style={{color:RC[0]}}>Crisis</span> <span style={{color:RC[1]}}>Bear</span> <span style={{color:RC[2]}}>Norm</span> <span style={{color:RC[3]}}>Bull</span></div>
+    <div><div className="text-xs text-gray-500 mb-0.5">Returns: <span style={{color:RC[0]}}>Crisis</span> <span style={{color:RC[1]}}>Bear</span> <span style={{color:RC[2]}}>Norm</span> <span style={{color:RC[3]}}>Bull</span></div>
       <ResponsiveContainer width="100%" height={120}><ComposedChart data={data.slice(1)}><CartesianGrid strokeDasharray="3 3" stroke="#374151"/><XAxis dataKey="yr" tick={{fill:"#9ca3af",fontSize:9}}/><YAxis tick={{fill:"#9ca3af",fontSize:9}} tickFormatter={v=>`${(v*100).toFixed(0)}%`}/><Tooltip content={<TT/>}/><Bar dataKey="sR" name="Stocks" shape={({x,y,width,height,payload})=><rect x={x} y={Math.min(y,y+height)} width={width} height={Math.max(Math.abs(height),1)} fill={RC[payload.reg]||"#6b7280"} fillOpacity={.7}/>}/><Line type="monotone" dataKey="inf" stroke="#ef4444" strokeWidth={1.5} strokeDasharray="3 3" dot={false} name="Inflation"/><ReferenceLine y={0} stroke="#6b7280"/><Legend wrapperStyle={{fontSize:9}}/></ComposedChart></ResponsiveContainer></div>
   </div>);
 }
@@ -138,223 +115,347 @@ function ModelInfo({mode,capeLvl}){
     <div className="grid grid-cols-3 gap-1 text-center text-xs">{CN.map((n,i)=>{const p=CP[i];const fR=p.map(j=>{let c=1;for(let k=0;k<Math.min(10,NY-j);k++)c*=(1+STK[j+k]);return Math.pow(c,1/Math.min(10,NY-j))-1;});const avg=fR.length?fR.reduce((a,b)=>a+b,0)/fR.length:0;
       return(<div key={i} className="rounded p-1.5" style={{background:CC[i]+"22"}}><div style={{color:CC[i]}} className="font-semibold">{n}</div><div className="text-gray-400">{p.length} start yrs</div><div className="text-gray-500">Fwd 10yr: {fP(avg)}/yr</div></div>);})}</div>
     <div className="text-xs text-gray-400 space-y-1">
-      <p><span className="text-white">Two-phase model</span> matching CAPE's actual predictive structure:</p>
-      <p><span className="text-blue-400">Phase 1 (years 1–10):</span> Sequential returns from a randomly chosen starting year with similar CAPE. Captures the forward-return relationship CAPE actually predicts.</p>
-      <p><span className="text-blue-400">Phase 2 (years 11+):</span> Unconditional block bootstrap (7-year blocks). CAPE's predictive power fades beyond a decade; returns mean-revert to long-run averages.</p>
+      <p><span className="text-white">Two-phase model:</span> Years 1–10 from CAPE-similar starts. Years 11+ unconditional block bootstrap.</p>
       <p className="text-gray-500">Currently: <span className="text-white">{CN[capeLvl]}</span> ({CP[capeLvl].length} starting years)</p>
     </div>
-    <div className="text-xs text-amber-400/80 bg-amber-900/20 rounded p-1.5 space-y-1 border border-amber-800/30">
-      <p className="font-medium">⚠ Sample size caveat</p>
-      <p className="text-amber-400/60">With 99 years of US data split into three buckets, each contains ~30–40 starting years — but overlapping periods mean only ~8–12 are truly independent. A single historical episode (e.g., 1960s stagflation in the mid-CAPE bucket) can dominate an entire tier. CAPE predicts forward returns better than chance (Kitces/Income Lab research), but as a mechanical simulation input with rigid buckets, results can be counterintuitive. Best used as <span className="text-amber-300">directional context</span> alongside other methods, not as a standalone forecast.</p>
-    </div></div>);}
+    <div className="text-xs text-amber-400/80 bg-amber-900/20 rounded p-1.5 border border-amber-800/30"><p className="font-medium">⚠ Sample size caveat</p><p className="text-amber-400/60 mt-0.5">99 years split into 3 buckets yields ~30–40 starts each, but overlapping periods mean only ~8–12 are independent. Single episodes can dominate entire tiers. Best as directional context alongside other methods.</p></div></div>);}
   if(mode==="narrative"){return(<div className="bg-gray-800 rounded-lg p-3 space-y-2"><h3 className="text-xs font-semibold text-gray-400">Narrative Monte Carlo</h3>
     <div className="text-xs text-gray-400 space-y-1">
-      <p>Markets tell stories — crashes have chapters, recoveries have arcs. Narrative MC generates scenarios with <span className="text-white">internal coherence</span>:</p>
-      <p><span className="text-blue-400">Regime transitions:</span> Markov chain governs shifts between crisis/bear/normal/bull.</p>
-      <p><span className="text-blue-400">Episode playback:</span> Upon entering a regime, selects an actual historical episode and plays it sequentially.</p>
-      <p><span className="text-blue-400">Early transitions:</span> 8%/year chance of mid-episode regime shift prevents unrealistically long runs.</p>
+      <p>Markets tell stories – crashes have chapters, recoveries have arcs. Narrative MC generates scenarios with <span className="text-white">internal coherence</span>:</p>
+      <p><span className="text-blue-400">Regime transitions:</span> Markov chain governs crisis/bear/normal/bull shifts.</p>
+      <p><span className="text-blue-400">Episode playback:</span> Each regime draws an actual historical episode, played sequentially.</p>
+      <p><span className="text-blue-400">Early transitions:</span> 8%/yr chance of mid-episode shift prevents unrealistic runs.</p>
       <p className="text-gray-500">Episodes: {EPISODES.map((e,i)=><span key={i} style={{color:RC[i]}}> {RN[i]}({e.length})</span>)}</p>
     </div></div>);}
   return null;
 }
 
-function mkSmSp(mode,wt,cl,fl){return mode==="yale"?{mode,wt:wt/100}:{mode,cl:cl/100,fl:fl/100};}
+function GuideModal({onClose}){
+  const H2=({children})=><h2 className="text-base font-bold text-white mt-5 mb-2 border-b border-gray-700 pb-1">{children}</h2>;
+  const H3=({children})=><h3 className="text-sm font-semibold text-gray-200 mt-3 mb-1">{children}</h3>;
+  const P=({children})=><p className="text-gray-400 mb-2 leading-relaxed">{children}</p>;
+  const W=({children})=><span className="text-white">{children}</span>;
+  const B=({children})=><span className="text-blue-400">{children}</span>;
+  const G=({children})=><span className="text-green-400">{children}</span>;
+  const O=({children})=><span className="text-orange-400">{children}</span>;
+  const R=({children})=><span className="text-red-400">{children}</span>;
+  const Pu=({children})=><span className="text-purple-400">{children}</span>;
+  const SB=({label,children})=><div className="mb-2"><P><W>{label}:</W> {children}</P></div>;
+  return(
+    <div className="fixed inset-0 z-50 flex items-start justify-center" style={{background:"rgba(0,0,0,0.8)"}} onClick={onClose}>
+      <div className="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-3xl mx-4 my-8 max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e=>e.stopPropagation()}>
+        <div className="sticky top-0 bg-gray-900 border-b border-gray-700 p-4 flex justify-between items-center z-10">
+          <h1 className="text-lg font-bold text-white">📖 Guide to Retirement Withdrawals</h1>
+          <button onClick={onClose} className="text-gray-500 hover:text-white text-xl px-2">✕</button>
+        </div>
+        <div className="p-4 text-xs">
+          <P><em>A plain-language introduction to retirement withdrawal research, the strategies people use, and what this simulator does.</em></P>
+
+          <H2>The Big Idea</H2>
+          <P>You've saved for decades. Now you need to spend it — but not too fast. The central question of retirement finance is deceptively simple: <em>How much can you withdraw from your portfolio each year without running out of money before you die?</em></P>
+          <P>The answer depends on how long you live, what the markets do, how much you adjust your spending, and which assumptions you make about the future. Researchers have been studying this since the early 1990s, and there's still no single right answer — but there are frameworks that help you think clearly about the tradeoffs.</P>
+
+          <H2>A Brief History of the 4% Rule</H2>
+          <P>In 1994, a financial planner named <W>William Bengen</W> published a paper that changed retirement planning. He asked: if a retiree had invested in a mix of U.S. stocks and bonds starting in any year from 1926 onward, what's the most they could have withdrawn each year (adjusted for inflation) without running out over 30 years?</P>
+          <P>His method was straightforward. For every possible starting year, he simulated a retiree withdrawing a fixed percentage of their initial portfolio, adjusting upward each year for inflation. He tested different rates until he found the highest one that survived every single 30-year period in the historical record.</P>
+          <P>The answer: roughly <W>4%</W>. This became the baseline that virtually all subsequent research is measured against.</P>
+          <H3>Why it matters — and why it's not enough</H3>
+          <P>The 4% rule is <W>rigid</W> (same amount regardless of portfolio performance), based on <W>one country</W> (the U.S. had an unusually strong market), uses <W>historical data only</W> (the future may differ), and <W>optimizes for not failing</W> without addressing spending quality. These limitations are why researchers developed better strategies and better ways to model uncertainty.</P>
+
+          <H2>The Two Big Questions</H2>
+          <P>Every retirement withdrawal analysis asks two questions simultaneously:</P>
+          <SB label="1. How should I withdraw? (Strategy)">Rules for spending — do you take the same amount every year? Adjust based on your portfolio? Set guardrails? The simulator offers five strategies.</SB>
+          <SB label="2. How should I model uncertainty? (Analysis Method)">What might happen to markets — replay history? Shuffle returns randomly? Account for crash→recovery patterns? The simulator offers six methods.</SB>
+          <P>These choices are independent. You can test any strategy against any method and see how the answer changes.</P>
+
+          <H2>The Five Withdrawal Strategies</H2>
+          <H3>Fixed Real (Bengen)</H3>
+          <P>The original. Withdraw a fixed dollar amount, adjusted for inflation each year, regardless of markets. <G>Strength:</G> Perfectly predictable spending. <R>Weakness:</R> Completely ignores your portfolio — you could be withdrawing 8% of a decimated portfolio and not adjust.</P>
+          <H3>Forgo Inflation (Morningstar)</H3>
+          <P>A small tweak to Fixed Real: in any year your portfolio declined, skip the inflation adjustment. You don't cut spending — you just don't increase it. <G>Strength:</G> Simple, easy to explain, meaningfully improves survival rates. <R>Weakness:</R> The relief is modest in prolonged downturns.</P>
+          <H3>Guardrails (Guyton-Klinger)</H3>
+          <P>Start with a fixed real withdrawal, but monitor the ratio of your withdrawal to your portfolio value. If it drifts above an upper guardrail, cut spending. Below a lower guardrail, raise it. A floor prevents spending from ever falling below a set percentage of your original amount. <G>Strength:</G> Stable for long stretches with occasional step-changes. <R>Weakness:</R> Adjustments can feel abrupt when guardrails trigger.</P>
+          <H3>Smoothed % (Yale / Vanguard)</H3>
+          <P><W>Yale mode</W> blends two anchors each year: last year's spending (inflation-adjusted) and a target percentage of the current portfolio. The smoothing weight controls the blend — a direct dial on how aggressively spending tracks market reality versus maintaining stability. Designed for perpetual endowments but translates well to retirement.</P>
+          <P><W>Vanguard mode</W> targets a percentage of the portfolio each year but caps annual changes (typically +5% max increase, −2.5% max decrease). Similar to Yale but with hard guardrails on volatility rather than a blending weight.</P>
+          <P><G>Strength:</G> Spending adjusts to reality without whiplash — ideal for higher equity allocations where the withdrawal policy itself acts as the shock absorber. <R>Weakness:</R> Spending is never perfectly predictable.</P>
+          <H3>RMD-Based</H3>
+          <P>Withdraw portfolio ÷ remaining years each year. Mirrors IRS Required Minimum Distribution logic (simplified — not actual IRS tables). <G>Strength:</G> Can never technically fail (always 100% success). <R>Weakness:</R> Spending volatility directly mirrors market volatility.</P>
+
+          <H2>The Six Analysis Methods</H2>
+          <H3>Historical Rolling (Bengen)</H3>
+          <P>For each starting year (1926, 1927, ...), play through actual returns for the full horizon. Captures real sequences as they happened. Misses scenarios that never occurred but could. The ~70 rolling periods overlap heavily — effective independent sample size is far smaller than 70.</P>
+          <H3>MC: Standard (i.i.d.)</H3>
+          <P>Industry standard (Morningstar). Each year draws randomly from history, independently. Generates wide range of outcomes but breaks the memory markets have — real crashes are followed by recoveries, not more random draws.</P>
+          <H3>MC: Block Bootstrap</H3>
+          <P>Sample contiguous blocks of years (default 7). A block starting in 1973 brings 1974, 1975... preserving crash→recovery sequences. Used by Portfolio Visualizer.</P>
+          <H3>MC: Regime-Switching</H3>
+          <P>Classify years into regimes (crisis, bear, normal, bull). A Markov chain governs transitions. Captures macro dynamics — after a crisis, recovery is likely. Within each regime, years are still drawn independently.</P>
+          <H3>MC: CAPE-Conditioned</H3>
+          <P>Based on Fitzpatrick & Tharp (2023). CAPE measures how expensive the market is. High CAPE predicts lower forward returns. Two-phase model: first ~10 years from CAPE-similar starting years, then unconditional bootstrap. <O>Caveat:</O> Small sample sizes (~8–12 independent observations per bucket). Use as directional context.</P>
+          <H3>MC: Narrative ★</H3>
+          <P>Original method. Markets tell stories — crashes have chapters, recoveries have arcs. <B>Regime transitions</B> (Markov chain) govern <em>when</em> markets shift. <B>Episode playback</B> draws actual historical episodes and plays them sequentially — as they really happened. An 8%/yr early-transition probability prevents unrealistically long runs. The result: scenarios with both macro coherence and historically accurate micro dynamics. <O>Caveat:</O> Not peer-reviewed or validated against out-of-sample data.</P>
+
+          <H2>How to Read the Charts</H2>
+          <H3>Percentile Fan Charts</H3>
+          <P>Five lines showing the spread of outcomes. <G>95th/75th</G> (green) = optimistic. <B>Median</B> (blue, thick) = middle outcome, your best single estimate. <O>25th</O> (orange) = below average. <R>5th</R> (red) = pessimistic. A wide fan means high uncertainty. A narrow fan means more predictable outcomes.</P>
+          <H3>Success Rate</H3>
+          <P>Percentage of simulations where the portfolio lasted the full horizon. Above 95% is strong; below 80% is a warning. But success rate alone doesn't capture spending quality — a strategy can show 100% success while cutting spending to near-zero.</P>
+          <H3>Spending Volatility</H3>
+          <P>How much spending bounces around year to year. Fixed Real = 0% always. Below ~10% generally feels livable; above 15% may be uncomfortable.</P>
+          <H3>Year Grid (Historical only)</H3>
+          <P>Each button is a retirement cohort. <G>Green</G> = survived, <R>red</R> = failed. Click any year to see that retiree's full experience. Try 1966 (worst case) vs. 1982 (best case).</P>
+
+          <H2>Key Concepts</H2>
+          <H3>Sequence-of-Returns Risk</H3>
+          <P>The <em>order</em> of returns matters as much as the average. Bad years early (while withdrawing from a shrinking portfolio) can be fatal, while the same bad years late are survivable. This is the fundamental reason the 4% rule exists — it's calibrated for the worst <em>sequences</em>, not the worst averages.</P>
+          <H3>Real vs. Nominal</H3>
+          <P><W>Real dollars</W> (default) measure purchasing power. <W>Nominal dollars</W> are the raw numbers. A portfolio that grows from $1M to $2M looks great nominally, but if prices tripled, you lost purchasing power. Always think in real terms for retirement planning.</P>
+          <H3>The Tradeoff Triangle</H3>
+          <P>Every strategy involves three competing goals: <W>success rate</W> (not running out), <W>spending level</W> (how much you get), and <W>spending stability</W> (how predictable it is). No strategy wins on all three. The Compare mode makes these tradeoffs visible.</P>
+          <H3>CAPE Ratio</H3>
+          <P>Current stock price ÷ average of 10 years of inflation-adjusted earnings. Measures how "expensive" the market is. High CAPE (above 25) has historically predicted lower forward returns. Currently ~34 (high range).</P>
+
+          <H2>Suggested Explorations</H2>
+          <P><W>1. Replicate Bengen:</W> 4%, 50/50, 30yr, Fixed Real, Historical. You should see ~98.6%. Click the red squares — all late 1960s stagflation cohorts.</P>
+          <P><W>2. See why Monte Carlo matters:</W> Keep defaults, switch to "MC: Standard (i.i.d.)." Success drops to ~93%. Then try "MC: Narrative ★" — it falls between the two.</P>
+          <P><W>3. Compare strategies:</W> Switch to Compare mode. Select Fixed Real, Guardrails, Smoothed %. Use Narrative MC. Watch how success rates are similar but spending and volatility differ.</P>
+          <P><W>4. Push equity higher:</W> In Compare mode, move stocks to 70–80%. Fixed Real gets riskier. Smoothed % absorbs the volatility through its spending policy.</P>
+          <P><W>5. Tune the smoothing:</W> Single Strategy, Smoothed % (Yale), 70% stocks, 5% rate, Narrative MC. Adjust smoothing weight from 50% to 90% and watch the tradeoff shift.</P>
+          <P><W>6. Stress test with CAPE:</W> Switch to CAPE-Conditioned, High CAPE. This answers: "If the next decade looks like other expensive-market periods, how do these strategies hold up?"</P>
+
+          <H2>Honest Limitations</H2>
+          <P><W>U.S. data only</W> — one country with an unusually successful market. A global dataset would likely produce lower success rates.</P>
+          <P><W>Historical returns may not repeat</W> — all methods draw from the same 99 years. If the future is fundamentally different, projections may be optimistic.</P>
+          <P><W>No taxes, Social Security, or healthcare</W> — real retirement planning involves many factors this tool doesn't model.</P>
+          <P><W>RMD is simplified</W> — uses 1/N divisor, not actual IRS life expectancy tables.</P>
+          <P><W>Narrative MC is unvalidated</W> — original method, not peer-reviewed. Treat as one perspective.</P>
+          <P><W>This is not financial advice.</W> It's an educational and research tool.</P>
+
+          <H2>References</H2>
+          <div className="text-gray-500 space-y-1">
+            <P>Bengen, W.P. (1994). "Determining Withdrawal Rates Using Historical Data." <em>Journal of Financial Planning</em>, 7(4), 171–180.</P>
+            <P>Guyton, J.T. & Klinger, W.J. (2006). "Decision Rules and Maximum Initial Withdrawal Rates." <em>Journal of Financial Planning</em>, 19(3), 49–57.</P>
+            <P>Fitzpatrick, D. & Tharp, D. (2023). "Evaluating Monte Carlo Models for Retirement Planning." Income Lab / Kitces.com.</P>
+            <P>Benz, C., Ptak, J. & Rekenthaler, J. (2024). "The State of Retirement Income." Morningstar Research.</P>
+            <P>Dimson, E., Marsh, P. & Staunton, M. (2002). <em>Triumph of the Optimists</em>. Princeton University Press.</P>
+            <P>Jaconetti, C.M., Kinniry, F.M. & DiJoseph, M.A. (2020). "From Assets to Income." Vanguard Research.</P>
+            <P>Shiller, R.J. Online Data. econ.yale.edu/~shiller/data.htm</P>
+          </div>
+        </div>
+      </div>
+    </div>);
+}
 
 export default function App(){
-  const[tab,setTab]=useState(0),[real,setReal]=useState(true),[selYear,setSelYear]=useState(null),[showDocs,setShowDocs]=useState(false);
-  // Historical
-  const[hRate,setHRate]=useState(4),[hAlloc,setHAlloc]=useState(50),[hHz,setHHz]=useState(30);
-  const[hStrat,setHStrat]=useState("fixed"),[hBand,setHBand]=useState(20),[hCut,setHCut]=useState(10),[hRaise,setHRaise]=useState(10),[hFloor,setHFloor]=useState(80);
-  const[hSmM,setHSmM]=useState("yale"),[hSmR,setHSmR]=useState(5),[hSmW,setHSmW]=useState(70),[hSmCl,setHSmCl]=useState(5),[hSmFl,setHSmFl]=useState(2.5);
-  // MC
-  const[mcRate,setMcRate]=useState(4),[mcAlloc,setMcAlloc]=useState(50),[mcHz,setMcHz]=useState(30);
-  const[mcStrat,setMcStrat]=useState("fixed"),[mcBand,setMcBand]=useState(20),[mcCut,setMcCut]=useState(10),[mcRaise,setMcRaise]=useState(10),[mcFloor,setMcFloor]=useState(80);
-  const[mcSmM,setMcSmM]=useState("yale"),[mcSmR,setMcSmR]=useState(5),[mcSmW,setMcSmW]=useState(70),[mcSmCl,setMcSmCl]=useState(5),[mcSmFl,setMcSmFl]=useState(2.5);
-  const[mcMode,setMcMode]=useState("iid"),[mcSims,setMcSims]=useState(1000),[mcSeed,setMcSeed]=useState(42);
-  const[mcBlock,setMcBlock]=useState(7),[mcCapeLvl,setMcCapeLvl]=useState(DEFAULT_CAPE);
-  const[showInfo,setShowInfo]=useState(false);
-  // Compare
-  const[cAlloc,setCAlloc]=useState(50),[cHz,setCHz]=useState(30),[cMcMode,setCMcMode]=useState("narrative");
-  const[cFR,setCFR]=useState(4);
-  const[cGR,setCGR]=useState(5),[cGBand,setCGBand]=useState(20),[cGCut,setCGCut]=useState(10),[cGRaise,setCGRaise]=useState(10),[cGFloor,setCGFloor]=useState(80);
-  const[cSmM,setCSmM]=useState("yale"),[cSmR,setCSmR]=useState(5),[cSmW,setCSmW]=useState(70),[cSmCl,setCSmCl]=useState(5),[cSmFl,setCSmFl]=useState(2.5);
+  const[view,setView]=useState("single"),[real,setReal]=useState(true),[showDocs,setShowDocs]=useState(false),[showInfo,setShowInfo]=useState(false),[selYear,setSelYear]=useState(null),[showGuide,setShowGuide]=useState(false);
+  const[rate,setRate]=useState(4),[alloc,setAlloc]=useState(50),[hz,setHz]=useState(30);
+  const[strat,setStrat]=useState("fixed");
+  const[band,setBand]=useState(20),[cut,setCut]=useState(10),[raise,setRaise]=useState(10),[floor,setFloor]=useState(80);
+  const[smM,setSmM]=useState("yale"),[smW,setSmW]=useState(70),[smCl,setSmCl]=useState(5),[smFl,setSmFl]=useState(2.5);
+  const[method,setMethod]=useState("historical"),[blockSz,setBlockSz]=useState(7),[capeLvl,setCapeLvl]=useState(DEFAULT_CAPE),[sims,setSims]=useState(1000),[seed,setSeed]=useState(42);
   const[cSel,setCSel]=useState(["fixed","guardrails","smoothed"]);
   const toggleCS=id=>setCSel(p=>p.includes(id)?p.length>2?p.filter(s=>s!==id):p:[...p,id]);
 
   const P0=1000000,pk=real?"pR":"port",wk=real?"wR":"w";
-  const hGrS=(k,v)=>{({band:setHBand,cut:setHCut,raise:setHRaise,floor:setHFloor})[k](v);};
-  const mcGrS=(k,v)=>{({band:setMcBand,cut:setMcCut,raise:setMcRaise,floor:setMcFloor})[k](v);};
-  const cGrS=(k,v)=>{({band:setCGBand,cut:setCGCut,raise:setCGRaise,floor:setCGFloor})[k](v);};
-  const hSmSp=()=>mkSmSp(hSmM,hSmW,hSmCl,hSmFl);
-  const mcSmSp=()=>mkSmSp(mcSmM,mcSmW,mcSmCl,mcSmFl);
-  const cSmSp=()=>mkSmSp(cSmM,cSmW,cSmCl,cSmFl);
+  const isHist=method==="historical",isMC=!isHist;
+  const grS=(k,v)=>{({band:setBand,cut:setCut,raise:setRaise,floor:setFloor})[k](v);};
+  const getSP=s=>{if(s==="guardrails")return{band:band/100,cut:cut/100,raise:raise/100,floor:floor/100};if(s==="smoothed")return mkSmSp(smM,smW,smCl,smFl);return{};};
+  const effRate=s=>s==="rmd"?1/hz:rate/100;
+  const makeGen=rng=>{if(method==="block")return genBlock(rng,blockSz);if(method==="regime")return genRegime(rng);if(method==="cape")return genCAPE(rng,capeLvl);if(method==="narrative")return genNarrative(rng);return genIID(rng);};
 
-  const getRate=(strat,fixedR,smR,hz)=>{if(strat==="rmd")return 1/hz;if(strat==="smoothed")return smR/100;return fixedR/100;};
-  const getSp=(strat,grSp,smSp)=>{if(strat==="guardrails")return grSp;if(strat==="smoothed")return smSp;return{};};
-
-  const hist=useMemo(()=>{
-    const rate=getRate(hStrat,hRate,hSmR,hHz),alloc=hAlloc/100,sp=getSp(hStrat,{band:hBand/100,cut:hCut/100,raise:hRaise/100,floor:hFloor/100},hSmSp());
-    const mx=NY-hHz,periods=[];
-    for(let i=0;i<=mx;i++)periods.push({startYear:Y0+i,...simHist(i,P0,rate,alloc,hHz,hStrat,sp)});
-    const succRate=periods.filter(p=>p.ok).length/periods.length;
-    const sweep=[];for(let r=200;r<=800;r+=50){const rt=r/10000;let ok=0;for(let i=0;i<=mx;i++)if(simHist(i,P0,rt,alloc,hHz,hStrat,getSp(hStrat,{band:hBand/100,cut:hCut/100,raise:hRaise/100,floor:hFloor/100},hSmSp())).ok)ok++;sweep.push({rate:r/100,success:+(ok/(mx+1)*100).toFixed(1)});}
-    let maxSafe=0;for(let r=200;r<=1000;r++){const rt=r/10000;let allOk=true;for(let i=0;i<=mx;i++){if(!simHist(i,P0,rt,alloc,hHz,hStrat,getSp(hStrat,{band:hBand/100,cut:hCut/100,raise:hRaise/100,floor:hFloor/100},hSmSp())).ok){allOk=false;break;}}if(allOk)maxSafe=r/100;else break;}
-    const failed=periods.filter(p=>!p.ok);const worst=failed.length?failed.sort((a,b)=>(a.failYr||999)-(b.failYr||999))[0]:periods.sort((a,b)=>a.path[a.path.length-1].port-b.path[b.path.length-1].port)[0];
-    return{periods,succRate,sweep,maxSafe,worst,pctData:buildPct(periods,hHz,pk,wk),medVol:pct(periods.map(p=>sVol(p.path,wk)),.5)};
-  },[hRate,hAlloc,hHz,hStrat,hBand,hCut,hRaise,hFloor,hSmM,hSmR,hSmW,hSmCl,hSmFl,real]);
-
-  const mc=useMemo(()=>{
-    const rate=getRate(mcStrat,mcRate,mcSmR,mcHz),alloc=mcAlloc/100,sp=getSp(mcStrat,{band:mcBand/100,cut:mcCut/100,raise:mcRaise/100,floor:mcFloor/100},mcSmSp());
-    const rng=mkRng(mcSeed);let gf;
-    if(mcMode==="block")gf=genBlock(rng,mcBlock);else if(mcMode==="regime")gf=genRegime(rng);
-    else if(mcMode==="cape")gf=genCAPE(rng,mcCapeLvl);else if(mcMode==="narrative")gf=genNarrative(rng);
-    else gf=genIID(rng);
-    const results=runMC(P0,rate,alloc,mcHz,mcStrat,sp,mcSims,gf);
-    return{results,succRate:results.filter(r=>r.ok).length/results.length,pctData:buildPct(results,mcHz,pk,wk)};
-  },[mcRate,mcAlloc,mcHz,mcStrat,mcBand,mcCut,mcRaise,mcFloor,mcSmM,mcSmR,mcSmW,mcSmCl,mcSmFl,mcMode,mcSims,mcSeed,mcBlock,mcCapeLvl,real]);
+  const single=useMemo(()=>{
+    if(view==="compare")return null;
+    const r=effRate(strat),a=alloc/100,sp=getSP(strat);
+    if(isHist){
+      const mx=NY-hz,periods=[];
+      for(let i=0;i<=mx;i++)periods.push({startYear:Y0+i,...simHist(i,P0,r,a,hz,strat,sp)});
+      const succRate=periods.filter(p=>p.ok).length/periods.length;
+      let sweep=[];
+      if(strat!=="rmd"){for(let rt=200;rt<=800;rt+=50){const rr=rt/10000;let ok=0;for(let i=0;i<=mx;i++)if(simHist(i,P0,rr,a,hz,strat,getSP(strat)).ok)ok++;sweep.push({rate:rt/100,success:+(ok/(mx+1)*100).toFixed(1)});}}
+      let maxSafe=0;
+      if(strat!=="rmd"&&strat!=="smoothed"){for(let rt=200;rt<=1000;rt++){const rr=rt/10000;let allOk=true;for(let i=0;i<=mx;i++){if(!simHist(i,P0,rr,a,hz,strat,getSP(strat)).ok){allOk=false;break;}}if(allOk)maxSafe=rt/100;else break;}}
+      const failed=periods.filter(p=>!p.ok);const worst=failed.length?failed.sort((a,b)=>(a.failYr||999)-(b.failYr||999))[0]:periods.sort((a,b)=>a.path[a.path.length-1].port-b.path[b.path.length-1].port)[0];
+      return{type:"hist",periods,succRate,sweep,maxSafe,worst,pctData:buildPct(periods,hz,pk,wk),medVol:pct(periods.map(p=>sVol(p.path,wk)),.5)};
+    }else{
+      const rng=mkRng(seed),gf=makeGen(rng);
+      const results=runMC(P0,r,a,hz,strat,sp,sims,gf);
+      const succRate=results.filter(r=>r.ok).length/results.length;
+      return{type:"mc",results,succRate,pctData:buildPct(results,hz,pk,wk),medVol:pct(results.map(r=>sVol(r.path,wk)),.5)};
+    }
+  },[view,rate,alloc,hz,strat,band,cut,raise,floor,smM,smW,smCl,smFl,method,blockSz,capeLvl,sims,seed,real]);
 
   const cmp=useMemo(()=>{
-    const alloc=cAlloc/100,mx=NY-cHz;
-    const cfgs={
-      fixed:{rate:cFR/100,sp:{}},forgo:{rate:cFR/100,sp:{}},
-      guardrails:{rate:cGR/100,sp:{band:cGBand/100,cut:cGCut/100,raise:cGRaise/100,floor:cGFloor/100}},
-      smoothed:{rate:cSmR/100,sp:cSmSp()},rmd:{rate:1/cHz,sp:{}},
-    };
-    return cSel.map(id=>{const{rate,sp}=cfgs[id];let results;
-      if(cMcMode==="historical"){results=[];for(let i=0;i<=mx;i++)results.push({...simHist(i,P0,rate,alloc,cHz,id,sp),startYear:Y0+i});}
-      else{const rng=mkRng(42);let gf;
-        if(cMcMode==="block")gf=genBlock(rng,7);else if(cMcMode==="regime")gf=genRegime(rng);
-        else if(cMcMode==="cape")gf=genCAPE(rng,mcCapeLvl);else if(cMcMode==="narrative")gf=genNarrative(rng);
-        else gf=genIID(rng);results=runMC(P0,rate,alloc,cHz,id,sp,1000,gf);}
+    if(view!=="compare")return[];
+    const a=alloc/100,mx=NY-hz;
+    return cSel.map(id=>{
+      const r=effRate(id),sp=getSP(id);let results;
+      if(isHist){results=[];for(let i=0;i<=mx;i++)results.push({...simHist(i,P0,r,a,hz,id,sp),startYear:Y0+i});}
+      else{const rng=mkRng(42),gf=makeGen(rng);results=runMC(P0,r,a,hz,id,sp,1000,gf);}
       const sr=results.filter(r=>r.ok).length/results.length;
       const aW=[],aT=[];for(const r of results){aW.push(...r.path.filter(s=>s[wk]>0).map(s=>s[wk]));aT.push(r.path[r.path.length-1][pk]);}
       const vols=results.map(r=>sVol(r.path,wk));
-      const pp=[],sp2=[];for(let y=0;y<=cHz;y++){pp.push(pct(results.map(r=>r.path[Math.min(y,r.path.length-1)]?.[pk]??0),.5));if(y>0)sp2.push(pct(results.filter(r=>r.path[y]?.[wk]>0).map(r=>r.path[y][wk]),.5));}
+      const pp=[],sp2=[];for(let y=0;y<=hz;y++){pp.push(pct(results.map(r=>r.path[Math.min(y,r.path.length-1)]?.[pk]??0),.5));if(y>0)sp2.push(pct(results.filter(r=>r.path[y]?.[wk]>0).map(r=>r.path[y][wk]),.5));}
       return{name:id,succRate:sr,medW:pct(aW,.5),loW:pct(aW,.1),hiW:pct(aW,.9),medTerm:pct(aT,.5),medVol:pct(vols,.5),portPath:pp,spendPath:sp2};
     });
-  },[cAlloc,cHz,cFR,cGR,cGBand,cGCut,cGRaise,cGFloor,cSmM,cSmR,cSmW,cSmCl,cSmFl,cMcMode,mcCapeLvl,cSel,real]);
+  },[view,rate,alloc,hz,band,cut,raise,floor,smM,smW,smCl,smFl,method,blockSz,capeLvl,cSel,real]);
 
-  const selP=selYear!=null?hist.periods.find(p=>p.startYear===selYear):null;
+  const selP=selYear!=null&&single?.periods?single.periods.find(p=>p.startYear===selYear):null;
   const sc="bg-gray-800 rounded-lg p-3";
+  const curStrat=view==="single"?strat:null;
+  const showGr=view==="single"?strat==="guardrails":cSel.includes("guardrails");
+  const showSm=view==="single"?strat==="smoothed":cSel.includes("smoothed");
+
   return(
     <div className="min-h-screen bg-gray-950 text-gray-100 p-2 text-sm" style={{fontFamily:"system-ui"}}>
+      {showGuide&&<GuideModal onClose={()=>setShowGuide(false)}/>}
       <div className="max-w-6xl mx-auto space-y-2">
         <div className="flex justify-between items-start flex-wrap gap-2">
-          <div><h1 className="text-lg font-bold text-white">Retirement Withdrawal Strategy Simulator</h1><p className="text-xs text-gray-500">Bengen (1994) · Shiller CAPE · 1926–2024 · $1M</p></div>
-          <div className="flex items-center gap-1 bg-gray-800 rounded-lg p-1">
-            <button onClick={()=>setReal(true)} className={`px-2.5 py-1 rounded text-xs font-medium ${real?"bg-blue-600 text-white":"text-gray-400"}`}>Real $</button>
-            <button onClick={()=>setReal(false)} className={`px-2.5 py-1 rounded text-xs font-medium ${!real?"bg-blue-600 text-white":"text-gray-400"}`}>Nominal $</button>
+          <div><h1 className="text-lg font-bold text-white">Retirement Withdrawal Strategy Simulator</h1><p className="text-xs text-gray-500">Bengen (1994) · Shiller/FRED data · 1926–2024 · $1M starting portfolio · v1.1</p></div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button onClick={()=>setShowGuide(true)} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors">📖 Guide to Retirement Withdrawals</button>
+            <div className="flex items-center gap-1 bg-gray-800 rounded-lg p-1">
+              <button onClick={()=>{setView("single");setSelYear(null);}} className={`px-2.5 py-1 rounded text-xs font-medium ${view==="single"?"bg-blue-600 text-white":"text-gray-400"}`}>Single Strategy</button>
+              <button onClick={()=>{setView("compare");setSelYear(null);}} className={`px-2.5 py-1 rounded text-xs font-medium ${view==="compare"?"bg-blue-600 text-white":"text-gray-400"}`}>Compare</button>
+            </div>
+            <div className="flex items-center gap-1 bg-gray-800 rounded-lg p-1">
+              <button onClick={()=>setReal(true)} className={`px-2.5 py-1 rounded text-xs font-medium ${real?"bg-blue-600 text-white":"text-gray-400"}`}>Real $</button>
+              <button onClick={()=>setReal(false)} className={`px-2.5 py-1 rounded text-xs font-medium ${!real?"bg-blue-600 text-white":"text-gray-400"}`}>Nominal $</button>
+            </div>
           </div>
         </div>
-        <div className="flex gap-1 bg-gray-900 rounded-lg p-1">{TABS.map((t,i)=>(<button key={i} onClick={()=>{setTab(i);setSelYear(null);}} className={`flex-1 py-1.5 px-2 rounded text-xs font-medium ${tab===i?"bg-blue-600 text-white":"text-gray-400 hover:text-gray-200 hover:bg-gray-800"}`}>{t}</button>))}</div>
 
-        {tab===0&&(<div className="grid grid-cols-1 lg:grid-cols-4 gap-2">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-2">
+          {/* SIDEBAR */}
           <div className="bg-gray-800 rounded-lg p-3 space-y-2 lg:col-span-1">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Parameters</h3>
-            {hStrat!=="rmd"&&hStrat!=="smoothed"&&<Sl label="Withdrawal Rate" value={hRate} onChange={setHRate} min={2} max={8} step={0.1} f={v=>`${v.toFixed(1)}%`}/>}
-            <Sl label="Stocks / Bonds" value={hAlloc} onChange={setHAlloc} min={0} max={100} step={5} f={v=>`${v}/${100-v}`}/>
-            <Sl label="Horizon" value={hHz} onChange={v=>{setHHz(v);setSelYear(null);}} min={10} max={40} step={1} f={v=>`${v}yr`}/>
-            <div className="pt-1 border-t border-gray-700"><label className="text-xs text-gray-400">Strategy</label><StratSelect strat={hStrat} setStrat={setHStrat}/></div>
-            {hStrat==="guardrails"&&<GrIn band={hBand} cut={hCut} raise={hRaise} floor={hFloor} set={hGrS}/>}
-            {hStrat==="smoothed"&&<SmIn mode={hSmM} setMode={setHSmM} rate={hSmR} setRate={setHSmR} wt={hSmW} setWt={setHSmW} cl={hSmCl} setCl={setHSmCl} fl={hSmFl} setFl={setHSmFl}/>}
-            <div className="pt-2 border-t border-gray-700 space-y-1">
-              <div className="text-center"><div className="text-2xl font-bold" style={{color:hist.succRate>=.95?"#22c55e":hist.succRate>=.8?"#f59e0b":"#ef4444"}}>{(hist.succRate*100).toFixed(1)}%</div><div className="text-xs text-gray-500">Success ({hist.periods.length} periods)</div></div>
-              {hStrat!=="rmd"&&hStrat!=="smoothed"&&<div className="text-center"><div className="text-base font-semibold text-blue-400">{hist.maxSafe.toFixed(2)}%</div><div className="text-xs text-gray-500">Max Safe WR</div></div>}
-              <div className="text-center"><div className="text-sm font-semibold text-purple-400">{fP(hist.medVol)}</div><div className="text-xs text-gray-500">Med. Spend Vol</div></div>
-              {hist.worst&&<div className="text-center text-xs text-gray-400">Worst: <span className="text-red-400 font-semibold cursor-pointer hover:underline" onClick={()=>setSelYear(hist.worst.startYear)}>{hist.worst.startYear}</span>{hist.worst.failYr?` (yr ${hist.worst.failYr})`:""}</div>}
-            </div></div>
-          <div className="lg:col-span-3 space-y-2">
-            {selP&&<YearDetail period={selP} hz={hHz} real={real} onClose={()=>setSelYear(null)}/>}
-            <div className={sc}><h3 className="text-xs font-semibold text-gray-400 mb-1">Success Rate by Withdrawal Rate</h3><ResponsiveContainer width="100%" height={160}><BarChart data={hist.sweep}><CartesianGrid strokeDasharray="3 3" stroke="#374151"/><XAxis dataKey="rate" tick={{fill:"#9ca3af",fontSize:10}} tickFormatter={v=>`${v}%`}/><YAxis domain={[0,100]} tick={{fill:"#9ca3af",fontSize:10}} tickFormatter={v=>`${v}%`}/><Tooltip content={<TT/>}/><Bar dataKey="success" name="Success %" radius={[3,3,0,0]} shape={({x,y,width,height,success})=><rect x={x} y={y} width={width} height={Math.max(height,0)} fill={success>=95?"#22c55e":success>=80?"#f59e0b":"#ef4444"} rx={3}/>}/></BarChart></ResponsiveContainer></div>
-            <div className={sc}><h3 className="text-xs font-semibold text-gray-400 mb-1">Portfolio Percentiles ({real?"Real":"Nom"})</h3><PctChart data={hist.pctData} pk="p"/></div>
-            <div className={sc}><h3 className="text-xs font-semibold text-gray-400 mb-1">Spending Percentiles ({real?"Real":"Nom"})</h3><PctChart data={hist.pctData.slice(1)} pk="w" h={180}/></div>
-            <div className={sc}><h3 className="text-xs font-semibold text-gray-400 mb-1">Click any year to inspect</h3><div className="flex flex-wrap gap-0.5">{hist.periods.map(p=>(<button key={p.startYear} onClick={()=>setSelYear(selYear===p.startYear?null:p.startYear)} className={`px-1 py-0.5 rounded text-xs font-mono ${selYear===p.startYear?"ring-2 ring-blue-400 scale-110 z-10":""} ${p.ok?"bg-green-900/40 text-green-400 hover:bg-green-900/70":"bg-red-900/40 text-red-400 hover:bg-red-900/70"}`}>{p.startYear}</button>))}</div></div>
-          </div></div>)}
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Inputs</h3>
+            {(view==="compare"||curStrat!=="rmd")&&<Sl label="Withdrawal Rate" value={rate} onChange={setRate} min={2} max={8} step={0.1} f={v=>`${v.toFixed(1)}%`}/>}
+            {view==="single"&&strat==="rmd"&&<div className="text-xs text-gray-400">Withdrawal Rate: <span className="text-white font-mono">{(100/hz).toFixed(1)}%</span> <span className="text-gray-500">(1/{hz})</span></div>}
+            <Sl label="Stocks / Bonds" value={alloc} onChange={setAlloc} min={0} max={100} step={5} f={v=>`${v}/${100-v}`}/>
+            <Sl label="Horizon" value={hz} onChange={v=>{setHz(v);setSelYear(null);}} min={10} max={40} step={1} f={v=>`${v}yr`}/>
 
-        {tab===1&&(<div className="grid grid-cols-1 lg:grid-cols-4 gap-2">
-          <div className="bg-gray-800 rounded-lg p-3 space-y-2 lg:col-span-1">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Parameters</h3>
-            <div><label className="text-xs text-gray-400">Strategy</label><StratSelect strat={mcStrat} setStrat={setMcStrat}/></div>
-            {mcStrat!=="rmd"&&mcStrat!=="smoothed"&&<Sl label="Withdrawal Rate" value={mcRate} onChange={setMcRate} min={2} max={8} step={0.1} f={v=>`${v.toFixed(1)}%`}/>}
-            <Sl label="Stocks / Bonds" value={mcAlloc} onChange={setMcAlloc} min={0} max={100} step={5} f={v=>`${v}/${100-v}`}/>
-            <Sl label="Horizon" value={mcHz} onChange={setMcHz} min={10} max={40} step={1} f={v=>`${v}yr`}/>
-            {mcStrat==="guardrails"&&<GrIn band={mcBand} cut={mcCut} raise={mcRaise} floor={mcFloor} set={mcGrS}/>}
-            {mcStrat==="smoothed"&&<SmIn mode={mcSmM} setMode={setMcSmM} rate={mcSmR} setRate={setMcSmR} wt={mcSmW} setWt={setMcSmW} cl={mcSmCl} setCl={setMcSmCl} fl={mcSmFl} setFl={setMcSmFl}/>}
-            <div className="pt-1 border-t border-gray-700 space-y-1"><label className="text-xs text-gray-400">Simulation Method</label>
-              {MC_MODES.map(m=>(<button key={m.id} onClick={()=>{setMcMode(m.id);setShowInfo(false);}} className={`w-full text-left px-2 py-1 rounded text-xs transition-colors ${mcMode===m.id?"bg-blue-900/50 border border-blue-500/50 text-blue-300":"bg-gray-700/50 border border-gray-600/30 text-gray-400 hover:text-gray-200"}`}><span className="font-medium">{m.label}</span>{m.id==="narrative"&&<span className="ml-1 text-purple-400">★</span>}<div className="text-xs opacity-60 mt-0.5">{m.desc}</div></button>))}</div>
-            {mcMode==="block"&&<Sl label="Block Size" value={mcBlock} onChange={setMcBlock} min={3} max={15} step={1} f={v=>`${v}yr`}/>}
-            {mcMode==="cape"&&<div className="pt-1"><label className="text-xs text-gray-400">Starting Valuation</label><select value={mcCapeLvl} onChange={e=>setMcCapeLvl(+e.target.value)} className="w-full mt-0.5 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs text-white">{CN.map((n,i)=><option key={i} value={i}>{n}</option>)}</select><div className="text-xs text-gray-500 mt-0.5">Current: CAPE ≈ {CAPE[NY-1].toFixed(0)} → {CN[DEFAULT_CAPE]}</div></div>}
-            {(mcMode==="regime"||mcMode==="cape"||mcMode==="narrative")&&<button onClick={()=>setShowInfo(!showInfo)} className="text-xs text-blue-400 hover:text-blue-300">{showInfo?"Hide":"Show"} model details →</button>}
-            <Sl label="Simulations" value={mcSims} onChange={setMcSims} min={100} max={5000} step={100}/>
-            <Sl label="Seed" value={mcSeed} onChange={setMcSeed} min={1} max={999} step={1}/>
-            <div className="pt-2 border-t border-gray-700 text-center">
-              <div className="text-2xl font-bold" style={{color:mc.succRate>=.95?"#22c55e":mc.succRate>=.8?"#f59e0b":"#ef4444"}}>{(mc.succRate*100).toFixed(1)}%</div>
-              <div className="text-xs text-gray-500">Success · {MC_MODES.find(m=>m.id===mcMode)?.label}</div>
-            </div></div>
-          <div className="lg:col-span-3 space-y-2">
-            {showInfo&&<ModelInfo mode={mcMode} capeLvl={mcCapeLvl}/>}
-            <div className={sc}><h3 className="text-xs font-semibold text-gray-400 mb-1">Portfolio Percentiles ({real?"Real":"Nom"})</h3><PctChart data={mc.pctData} pk="p" h={240}/></div>
-            <div className={sc}><h3 className="text-xs font-semibold text-gray-400 mb-1">Spending Percentiles ({real?"Real":"Nom"})</h3><PctChart data={mc.pctData.slice(1)} pk="w" h={200}/></div>
-            <div className="bg-gray-900 rounded p-2 text-xs text-gray-500 space-y-1">
-              <p><strong className="text-gray-400">i.i.d.:</strong> Independent year sampling. Morningstar comparable.</p>
-              <p><strong className="text-gray-400">Block Bootstrap:</strong> Contiguous blocks preserve crash→recovery sequences.</p>
-              <p><strong className="text-gray-400">Regime-Switching:</strong> Markov transitions between market regimes.</p>
-              <p><strong className="text-gray-400">CAPE-Conditioned:</strong> Two-phase — first decade from CAPE-similar starts, then unconditional block bootstrap. See model details for sample size caveats.</p>
-              <p><strong className="text-purple-400">Narrative MC ★:</strong> Regime transitions + coherent episode playback.</p>
-            </div></div>
-        </div>)}
+            <div className="pt-1 border-t border-gray-700">
+              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Strategy</label>
+              {view==="single"?(
+                <><select value={strat} onChange={e=>setStrat(e.target.value)} className="w-full mt-0.5 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs text-white">
+                  <option value="fixed">Fixed Real (Bengen)</option><option value="forgo">Forgo Inflation (Morningstar)</option><option value="guardrails">Guardrails (Guyton-Klinger)</option><option value="smoothed">Smoothed % (Yale/Vanguard)</option><option value="rmd">RMD-Based</option></select>
+                </>
+              ):(
+                <><div className="flex flex-wrap gap-1 mt-1">{CS.map(s=>(<button key={s.id} onClick={()=>toggleCS(s.id)} className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${cSel.includes(s.id)?s.bg:"bg-gray-700 text-gray-500"}`}>{s.label}</button>))}</div>
+                  {cSel.includes("rmd")&&<div className="text-xs text-gray-500 mt-1">RMD rate: 1/{hz} = {(100/hz).toFixed(1)}% (independent of slider)</div>}
+                </>
+              )}
+            </div>
+            {showGr&&<div className="pt-1 border-t border-gray-700">{view==="compare"&&<h4 className="text-xs font-medium" style={{color:CSM.guardrails.color}}>Guardrails</h4>}<GrIn band={band} cut={cut} raise={raise} floor={floor} set={grS}/></div>}
+            {showSm&&<div className="pt-1 border-t border-gray-700">{view==="compare"&&<h4 className="text-xs font-medium" style={{color:CSM.smoothed.color}}>Smoothed %</h4>}<SmIn mode={smM} setMode={setSmM} wt={smW} setWt={setSmW} cl={smCl} setCl={setSmCl} fl={smFl} setFl={setSmFl}/></div>}
 
-        {tab===2&&(<div className="grid grid-cols-1 lg:grid-cols-4 gap-2">
-          <div className="bg-gray-800 rounded-lg p-3 space-y-2 lg:col-span-1">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Common</h3>
-            <Sl label="Stocks / Bonds" value={cAlloc} onChange={setCAlloc} min={0} max={100} step={5} f={v=>`${v}/${100-v}`}/>
-            <Sl label="Horizon" value={cHz} onChange={setCHz} min={10} max={40} step={1} f={v=>`${v}yr`}/>
-            <div className="pt-1 border-t border-gray-700"><label className="text-xs text-gray-400">Data Method</label><select value={cMcMode} onChange={e=>setCMcMode(e.target.value)} className="w-full mt-0.5 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs text-white"><option value="historical">Historical Rolling</option><option value="iid">MC: Standard</option><option value="block">MC: Block Bootstrap</option><option value="regime">MC: Regime-Switching</option><option value="cape">MC: CAPE-Conditioned</option><option value="narrative">MC: Narrative ★</option></select></div>
-            <div className="pt-1 border-t border-gray-700"><label className="text-xs text-gray-400 font-medium">Compare (min 2)</label>
-              <div className="flex flex-wrap gap-1 mt-1">{CS.map(s=>(<button key={s.id} onClick={()=>toggleCS(s.id)} className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${cSel.includes(s.id)?s.bg:"bg-gray-700 text-gray-500"}`}>{s.label}</button>))}</div></div>
-            {cSel.includes("fixed")&&<div className="pt-1 border-t border-gray-700"><h4 className="text-xs font-medium" style={{color:CSM.fixed.color}}>Fixed Real {cSel.includes("forgo")?"& Forgo":""}</h4><Sl label="Rate" value={cFR} onChange={setCFR} min={2} max={8} step={0.1} f={v=>`${v.toFixed(1)}%`}/></div>}
-            {!cSel.includes("fixed")&&cSel.includes("forgo")&&<div className="pt-1 border-t border-gray-700"><h4 className="text-xs font-medium" style={{color:CSM.forgo.color}}>Forgo Inflation</h4><Sl label="Rate" value={cFR} onChange={setCFR} min={2} max={8} step={0.1} f={v=>`${v.toFixed(1)}%`}/></div>}
-            {cSel.includes("guardrails")&&<div className="pt-1 border-t border-gray-700"><h4 className="text-xs font-medium" style={{color:CSM.guardrails.color}}>Guardrails</h4><Sl label="Init Rate" value={cGR} onChange={setCGR} min={2} max={8} step={0.1} f={v=>`${v.toFixed(1)}%`}/><GrIn band={cGBand} cut={cGCut} raise={cGRaise} floor={cGFloor} set={cGrS}/></div>}
-            {cSel.includes("smoothed")&&<div className="pt-1 border-t border-gray-700"><h4 className="text-xs font-medium" style={{color:CSM.smoothed.color}}>Smoothed %</h4><SmIn mode={cSmM} setMode={setCSmM} rate={cSmR} setRate={setCSmR} wt={cSmW} setWt={setCSmW} cl={cSmCl} setCl={setCSmCl} fl={cSmFl} setFl={setCSmFl}/></div>}
-            {cSel.includes("rmd")&&<div className="pt-1 border-t border-gray-700"><h4 className="text-xs font-medium" style={{color:CSM.rmd.color}}>RMD-Based</h4><p className="text-xs text-gray-500">1/{cHz} declining</p></div>}
+            <div className="pt-1 border-t border-gray-700">
+              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Analysis Method</label>
+              <select value={method} onChange={e=>{setMethod(e.target.value);setShowInfo(false);setSelYear(null);}} className="w-full mt-0.5 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs text-white">
+                <option value="historical">Historical Rolling (Bengen)</option>
+                <option value="iid">MC: Standard (i.i.d.)</option>
+                <option value="block">MC: Block Bootstrap</option>
+                <option value="regime">MC: Regime-Switching</option>
+                <option value="cape">MC: CAPE-Conditioned</option>
+                <option value="narrative">MC: Narrative ★</option>
+              </select>
+              {method==="block"&&<div className="mt-1"><Sl label="Block Size" value={blockSz} onChange={setBlockSz} min={3} max={15} step={1} f={v=>`${v}yr`}/></div>}
+              {method==="cape"&&<div className="mt-1"><label className="text-xs text-gray-400">Starting Valuation</label><select value={capeLvl} onChange={e=>setCapeLvl(+e.target.value)} className="w-full mt-0.5 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs text-white">{CN.map((n,i)=><option key={i} value={i}>{n}</option>)}</select><div className="text-xs text-gray-500 mt-0.5">Current: CAPE ≈ {CAPE[NY-1].toFixed(0)} → {CN[DEFAULT_CAPE]}</div></div>}
+              {isMC&&<div className="mt-1 space-y-1"><Sl label="Simulations" value={sims} onChange={setSims} min={100} max={5000} step={100}/><Sl label="Seed" value={seed} onChange={setSeed} min={1} max={999} step={1}/></div>}
+              {(method==="regime"||method==="cape"||method==="narrative")&&<button onClick={()=>setShowInfo(!showInfo)} className="text-xs text-blue-400 hover:text-blue-300 mt-1">{showInfo?"Hide":"Show"} model details →</button>}
+            </div>
+
+            {view==="single"&&single&&(<div className="pt-2 border-t border-gray-700 space-y-1">
+              <div className="text-center"><div className="text-2xl font-bold" style={{color:single.succRate>=.95?"#22c55e":single.succRate>=.8?"#f59e0b":"#ef4444"}}>{(single.succRate*100).toFixed(1)}%</div><div className="text-xs text-gray-500">Success{isHist?` (${single.periods.length} periods)`:` · ${sims} sims`}</div></div>
+              {isHist&&strat!=="rmd"&&strat!=="smoothed"&&single.maxSafe>0&&<div className="text-center"><div className="text-base font-semibold text-blue-400">{single.maxSafe.toFixed(2)}%</div><div className="text-xs text-gray-500">Max Safe WR</div></div>}
+              <div className="text-center"><div className="text-sm font-semibold text-purple-400">{fP(single.medVol)}</div><div className="text-xs text-gray-500">Med. Spend Vol</div></div>
+              {isHist&&single.worst&&<div className="text-center text-xs text-gray-400">Worst: <span className="text-red-400 font-semibold cursor-pointer hover:underline" onClick={()=>setSelYear(single.worst.startYear)}>{single.worst.startYear}</span>{single.worst.failYr?` (yr ${single.worst.failYr})`:""}</div>}
+            </div>)}
           </div>
-          <div className="lg:col-span-3 space-y-2">
-            <div className={`grid gap-2`} style={{gridTemplateColumns:`repeat(${cmp.length},1fr)`}}>{cmp.map(s=>(<div key={s.name} className={sc+" text-center space-y-0.5"}><Badge name={s.name}/><div className="text-xl font-bold" style={{color:s.succRate>=.95?"#22c55e":s.succRate>=.8?"#f59e0b":"#ef4444"}}>{(s.succRate*100).toFixed(1)}%</div><div className="text-xs text-gray-500">Success</div><div className="text-xs"><span className="text-gray-400">Med spend:</span> <span className="text-white font-semibold">{fmt(s.medW)}</span></div><div className="text-xs text-gray-500">{fmt(s.loW)} – {fmt(s.hiW)}</div><div className="text-xs"><span className="text-gray-400">Spend vol:</span> <span className="text-purple-400 font-semibold">{fP(s.medVol)}</span></div><div className="text-xs"><span className="text-gray-400">Terminal:</span> <span className="text-white font-semibold">{fmt(s.medTerm)}</span></div></div>))}</div>
-            <div className={sc}><h3 className="text-xs font-semibold text-gray-400 mb-1">Median Portfolio ({real?"Real":"Nom"})</h3><ResponsiveContainer width="100%" height={200}><LineChart data={Array.from({length:cHz+1},(_,y)=>{const r={yr:y};cmp.forEach(s=>{r[s.name]=s.portPath[y];});return r;})}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151"/><XAxis dataKey="yr" tick={{fill:"#9ca3af",fontSize:10}}/><YAxis tick={{fill:"#9ca3af",fontSize:10}} tickFormatter={fmt}/><Tooltip content={<TT/>}/>
-              {cmp.map(s=><Line key={s.name} type="monotone" dataKey={s.name} stroke={CSM[s.name].color} strokeWidth={2} dot={false} name={CSM[s.name].label}/>)}
-              <ReferenceLine y={P0} stroke="#6b728060" strokeDasharray="3 3"/><ReferenceLine y={0} stroke="#6b7280"/><Legend wrapperStyle={{fontSize:10}}/></LineChart></ResponsiveContainer></div>
-            <div className={sc}><h3 className="text-xs font-semibold text-gray-400 mb-1">Median Spending ({real?"Real":"Nom"})</h3><ResponsiveContainer width="100%" height={180}><LineChart data={Array.from({length:cHz},(_,y)=>{const r={yr:y+1};cmp.forEach(s=>{r[s.name]=s.spendPath[y]||0;});return r;})}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151"/><XAxis dataKey="yr" tick={{fill:"#9ca3af",fontSize:10}}/><YAxis tick={{fill:"#9ca3af",fontSize:10}} tickFormatter={fmt}/><Tooltip content={<TT/>}/>
-              {cmp.map(s=><Line key={s.name} type="monotone" dataKey={s.name} stroke={CSM[s.name].color} strokeWidth={2} dot={false} name={CSM[s.name].label}/>)}
-              <Legend wrapperStyle={{fontSize:10}}/></LineChart></ResponsiveContainer></div>
-          </div></div>)}
 
-        <div className="border-t border-gray-800 pt-2">
+          {/* MAIN CONTENT */}
+          <div className="lg:col-span-3 space-y-2">
+            {showInfo&&<ModelInfo mode={method} capeLvl={capeLvl}/>}
+
+            {view==="single"&&single&&(<>
+              {selP&&<YearDetail period={selP} hz={hz} real={real} onClose={()=>setSelYear(null)}/>}
+              {isHist&&strat!=="rmd"&&single.sweep.length>0&&<div className={sc}><h3 className="text-xs font-semibold text-gray-400 mb-1">Success Rate by Withdrawal Rate</h3><ResponsiveContainer width="100%" height={160}><BarChart data={single.sweep}><CartesianGrid strokeDasharray="3 3" stroke="#374151"/><XAxis dataKey="rate" tick={{fill:"#9ca3af",fontSize:10}} tickFormatter={v=>`${v}%`}/><YAxis domain={[0,100]} tick={{fill:"#9ca3af",fontSize:10}} tickFormatter={v=>`${v}%`}/><Tooltip content={({active,payload})=>{if(!active||!payload?.length)return null;const dd=payload[0]?.payload;return(<div className="bg-gray-900 border border-gray-700 rounded-lg p-2 text-xs shadow-lg"><div className="flex justify-between gap-3"><span className="text-gray-400">Success</span><span className="font-mono text-white">{dd.success}%</span></div></div>);}}/><Bar dataKey="success" name="Success %" radius={[3,3,0,0]} shape={({x,y,width,height,success})=><rect x={x} y={y} width={width} height={Math.max(height,0)} fill={success>=95?"#22c55e":success>=80?"#f59e0b":"#ef4444"} rx={3}/>}/></BarChart></ResponsiveContainer></div>}
+              <div className={sc}><h3 className="text-xs font-semibold text-gray-400 mb-1">Portfolio Percentiles ({real?"Real":"Nom"})</h3><PctChart data={single.pctData} pk="p" h={220}/></div>
+              <div className={sc}><h3 className="text-xs font-semibold text-gray-400 mb-1">Spending Percentiles ({real?"Real":"Nom"})</h3><PctChart data={single.pctData.slice(1)} pk="w" h={180}/></div>
+              {isHist&&<div className={sc}><h3 className="text-xs font-semibold text-gray-400 mb-1">Click any year to inspect</h3><div className="flex flex-wrap gap-0.5">{single.periods.map(p=>(<button key={p.startYear} onClick={()=>setSelYear(selYear===p.startYear?null:p.startYear)} className={`px-1 py-0.5 rounded text-xs font-mono ${selYear===p.startYear?"ring-2 ring-blue-400 scale-110 z-10":""} ${p.ok?"bg-green-900/40 text-green-400 hover:bg-green-900/70":"bg-red-900/40 text-red-400 hover:bg-red-900/70"}`}>{p.startYear}</button>))}</div></div>}
+              {isMC&&<div className="bg-gray-900 rounded p-2 text-xs text-gray-500 space-y-1">
+                <p><strong className="text-gray-400">i.i.d.:</strong> Independent year sampling. Morningstar comparable.</p>
+                <p><strong className="text-gray-400">Block Bootstrap:</strong> Contiguous blocks preserve crash→recovery sequences.</p>
+                <p><strong className="text-gray-400">Regime-Switching:</strong> Markov transitions between market regimes.</p>
+                <p><strong className="text-gray-400">CAPE-Conditioned:</strong> Two-phase – first decade from CAPE-similar starts, then unconditional bootstrap.</p>
+                <p><strong className="text-purple-400">Narrative MC ★:</strong> Regime transitions + coherent episode playback.</p>
+              </div>}
+            </>)}
+
+            {view==="compare"&&cmp.length>0&&(<>
+              <div className="grid gap-2" style={{gridTemplateColumns:`repeat(${cmp.length},1fr)`}}>{cmp.map(s=>(<div key={s.name} className={sc+" text-center space-y-0.5"}><Badge name={s.name}/><div className="text-xl font-bold" style={{color:s.succRate>=.95?"#22c55e":s.succRate>=.8?"#f59e0b":"#ef4444"}}>{(s.succRate*100).toFixed(1)}%</div><div className="text-xs text-gray-500">Success</div><div className="text-xs"><span className="text-gray-400">Med spend:</span> <span className="text-white font-semibold">{fmt(s.medW)}</span></div><div className="text-xs text-gray-500">{fmt(s.loW)} – {fmt(s.hiW)}</div><div className="text-xs"><span className="text-gray-400">Spend vol:</span> <span className="text-purple-400 font-semibold">{fP(s.medVol)}</span></div><div className="text-xs"><span className="text-gray-400">Terminal:</span> <span className="text-white font-semibold">{fmt(s.medTerm)}</span></div></div>))}</div>
+              <div className={sc}><h3 className="text-xs font-semibold text-gray-400 mb-1">Median Portfolio ({real?"Real":"Nom"})</h3><ResponsiveContainer width="100%" height={200}><LineChart data={Array.from({length:hz+1},(_,y)=>{const r={yr:y};cmp.forEach(s=>{r[s.name]=s.portPath[y];});return r;})}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151"/><XAxis dataKey="yr" tick={{fill:"#9ca3af",fontSize:10}}/><YAxis tick={{fill:"#9ca3af",fontSize:10}} tickFormatter={fmt}/><Tooltip content={<TT/>}/>
+                {cmp.map(s=><Line key={s.name} type="monotone" dataKey={s.name} stroke={CSM[s.name].color} strokeWidth={2} dot={false} name={CSM[s.name].label}/>)}
+                <ReferenceLine y={P0} stroke="#6b728060" strokeDasharray="3 3"/><ReferenceLine y={0} stroke="#6b7280"/><Legend wrapperStyle={{fontSize:10}}/></LineChart></ResponsiveContainer></div>
+              <div className={sc}><h3 className="text-xs font-semibold text-gray-400 mb-1">Median Spending ({real?"Real":"Nom"})</h3><ResponsiveContainer width="100%" height={180}><LineChart data={Array.from({length:hz},(_,y)=>{const r={yr:y+1};cmp.forEach(s=>{r[s.name]=s.spendPath[y]||0;});return r;})}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151"/><XAxis dataKey="yr" tick={{fill:"#9ca3af",fontSize:10}}/><YAxis tick={{fill:"#9ca3af",fontSize:10}} tickFormatter={fmt}/><Tooltip content={<TT/>}/>
+                {cmp.map(s=><Line key={s.name} type="monotone" dataKey={s.name} stroke={CSM[s.name].color} strokeWidth={2} dot={false} name={CSM[s.name].label}/>)}
+                <Legend wrapperStyle={{fontSize:10}}/></LineChart></ResponsiveContainer></div>
+            </>)}
+          </div>
+        </div>
+
+        <div id="guide-section" className="border-t border-gray-800 pt-2">
           <button onClick={()=>setShowDocs(!showDocs)} className="text-xs text-gray-500 hover:text-gray-300 flex items-center gap-1">
-            <span>{showDocs?"▼":"▶"}</span> Methodology Notes & Disclaimers
+            <span>{showDocs?"▼":"▶"}</span> User Guide, Methodology & References
           </button>
           {showDocs&&(<div className="mt-2 bg-gray-900 rounded-lg p-3 text-xs text-gray-400 space-y-3">
+            <div className="bg-blue-900/30 border border-blue-800/40 rounded-lg p-3 space-y-2">
+              <h4 className="text-blue-300 font-semibold text-sm">Welcome — Start Here</h4>
+              <p className="text-blue-200/80">This simulator lets you test retirement withdrawal strategies against nearly a century of U.S. market history. It replicates William Bengen's original 1994 "4% rule" methodology and extends it with five Monte Carlo simulation methods and five withdrawal strategies.</p>
+              <div className="text-blue-200/70 space-y-1">
+                <p><span className="text-blue-300 font-medium">Quick orientation:</span> Use the <span className="text-white">left sidebar</span> to set your withdrawal rate, stock/bond mix, and time horizon. Pick a <span className="text-white">Strategy</span> (how you withdraw) and an <span className="text-white">Analysis Method</span> (how uncertainty is modeled). Charts update instantly.</p>
+                <p><span className="text-blue-300 font-medium">Single vs. Compare:</span> <span className="text-white">Single Strategy</span> mode gives you deep detail on one approach. <span className="text-white">Compare</span> mode lets you pit 2–5 strategies against each other under identical conditions — this is where the real insight lives.</p>
+                <p><span className="text-blue-300 font-medium">Real vs. Nominal:</span> <span className="text-white">Real $</span> (default) shows purchasing power — what your money can actually buy. <span className="text-white">Nominal $</span> shows raw dollar amounts.</p>
+                <p><span className="text-blue-300 font-medium">Want the full background?</span> Click <span className="text-white">📖 Guide to Retirement Withdrawals</span> in the header for a comprehensive introduction to the research, strategies, and methods.</p>
+              </div>
+            </div>
             <div><h4 className="text-gray-300 font-semibold mb-1">Data Source</h4>
-              <p>Returns are reconstructed from publicly available sources (Robert Shiller's dataset for S&P 500 returns and CPI, FRED for intermediate-term government bond proxies), covering 1926–2024. This closely replicates but is not identical to the proprietary Ibbotson SBBI dataset used by Bengen (1994) and Morningstar. Methodology validation: the app reproduces Bengen's key finding of a ~4% maximum safe withdrawal rate over 30-year rolling periods with a 50/50 stock/bond portfolio.</p></div>
+              <p>Returns reconstructed from publicly available sources: Robert Shiller's dataset (S&P 500 returns, CPI, CAPE) and FRED (intermediate-term government bond proxies), covering 1926–2024. This closely replicates but is not identical to the proprietary Ibbotson SBBI dataset used by Bengen (1994) and Morningstar. Methodology validation: the app reproduces Bengen's key finding of ~4% maximum safe withdrawal rate over 30-year rolling periods with a 50/50 stock/bond portfolio.</p></div>
             <div><h4 className="text-gray-300 font-semibold mb-1">US Survivorship Bias</h4>
-              <p>All five simulation methods draw exclusively from US market history. The United States experienced unusually strong equity returns in the 20th century relative to global markets. Retirees in Japan (post-1989), Germany (1910s–1940s), Italy, or other countries would have had materially different outcomes from identical strategies. Success rates from this tool carry inherent survivorship bias and should not be assumed to represent universal outcomes.</p></div>
+              <p>All five simulation methods draw exclusively from US market history. The United States experienced unusually strong equity returns in the 20th century relative to global markets (Dimson, Marsh & Staunton, 2002). Retirees in Japan (post-1989), Germany (1910s–1940s), or other countries would have had materially different outcomes. Success rates carry inherent survivorship bias.</p></div>
             <div><h4 className="text-gray-300 font-semibold mb-1">Historical Periods & Overlap</h4>
-              <p>The Historical (Bengen) tab reports success rates across rolling periods — e.g., ~70 overlapping 30-year periods from 1926–2024. Adjacent cohorts (1966 vs. 1967) share nearly all of their return sequence. Failures cluster in a single narrow window (late 1960s stagflation). The effective number of independent trials is far smaller than the reported period count — perhaps 8–12 for a 30-year horizon. A 98.6% success rate from 70 periods does not carry the same statistical confidence as 98.6% from 70 independent experiments.</p></div>
+              <p>The Historical Rolling method reports success across ~70 overlapping 30-year rolling periods. Adjacent cohorts share nearly all returns. Failures cluster in one window (late 1960s stagflation). Effective independent sample size is ~8–12 for a 30-year horizon. A 98.6% rate from 70 overlapping periods is not equivalent to 98.6% from 70 independent trials.</p></div>
             <div><h4 className="text-gray-300 font-semibold mb-1">Withdrawal Strategies</h4>
-              <p><span className="text-gray-300">Fixed Real (Bengen):</span> Withdraw a fixed inflation-adjusted amount each year. The original 4% rule. Simple, predictable spending, but rigid — provides no relief to the portfolio during downturns.</p>
-              <p className="mt-1"><span className="text-gray-300">Forgo Inflation (Morningstar):</span> Same as Fixed Real, but skip the CPI adjustment in any year where the portfolio's return was negative. A minimal tweak that meaningfully improves survival by providing automatic spending relief exactly when needed.</p>
-              <p className="mt-1"><span className="text-gray-300">Guardrails:</span> Start with a fixed real withdrawal but monitor the withdrawal-to-portfolio ratio. If it drifts above an upper band, cut spending; if below a lower band, raise it. A floor prevents spending from falling below a percentage of the initial amount. Based on Guyton-Klinger research.</p>
-              <p className="mt-1"><span className="text-gray-300">Smoothed % (Yale/Vanguard):</span> Yale mode blends prior spending (inflation-adjusted) with a target percentage of the current portfolio using a weighting factor — e.g., 70% prior spending + 30% portfolio target. Vanguard mode targets a percentage of current portfolio but caps year-over-year changes (typically +5%/−2.5%). Both adapt to market reality while smoothing spending volatility.</p>
-              <p className="mt-1"><span className="text-gray-300">RMD-Based:</span> Uses a simplified 1/N divisor (portfolio ÷ remaining years), not actual IRS life expectancy tables. Real RMD divisors are typically longer, producing lower withdrawals. This implementation is a "proportional spend-down" concept and should not be interpreted as replicating IRS RMD requirements.</p></div>
+              <p><span className="text-gray-300">Fixed Real (Bengen):</span> Fixed inflation-adjusted withdrawal. The original 4% rule. Bengen, W.P. (1994), "Determining Withdrawal Rates Using Historical Data," <em>Journal of Financial Planning</em>.</p>
+              <p className="mt-1"><span className="text-gray-300">Forgo Inflation (Morningstar):</span> Skip CPI adjustment in years the portfolio declined. Tested in Benz, C., Ptak, J., & Rekenthaler, J. (2023–2024), "The State of Retirement Income," <em>Morningstar Research</em>.</p>
+              <p className="mt-1"><span className="text-gray-300">Guardrails (Guyton-Klinger):</span> Adjust spending when withdrawal-to-portfolio ratio drifts outside a band. Guyton, J.T. & Klinger, W.J. (2006), "Decision Rules and Maximum Initial Withdrawal Rates," <em>Journal of Financial Planning</em>.</p>
+              <p className="mt-1"><span className="text-gray-300">Smoothed % (Yale/Vanguard):</span> Yale mode: blend prior spending with portfolio target (Tobin, 1974; Yale Endowment reports). Vanguard mode: target % of portfolio with capped annual changes (Jaconetti, Kinniry & DiJoseph, 2020, <em>Vanguard Research</em>). The withdrawal rate slider sets the target rate for both modes.</p>
+              <p className="mt-1"><span className="text-gray-300">RMD-Based:</span> Simplified 1/N divisor (portfolio ÷ remaining years). Does <em>not</em> use actual IRS life expectancy tables. Real RMD divisors are longer, producing lower withdrawals.</p></div>
             <div><h4 className="text-gray-300 font-semibold mb-1">Monte Carlo Methods</h4>
-              <p><span className="text-gray-300">i.i.d. (Standard):</span> Each year's returns drawn independently from the full historical pool. Industry standard (Morningstar). Overstates tail risk by generating sequences real markets' mean-reverting structure makes improbable.</p>
-              <p className="mt-1"><span className="text-gray-300">Block Bootstrap:</span> Contiguous multi-year blocks preserve crash→recovery dynamics. Matches Portfolio Visualizer's approach. Results sensitive to which episodes are drawn — seed changes produce more variation than other methods.</p>
-              <p className="mt-1"><span className="text-gray-300">Regime-Switching:</span> Markov chain governs transitions between four return regimes with empirically derived probabilities. Captures macro dynamics but not within-episode coherence.</p>
-              <p className="mt-1"><span className="text-gray-300">CAPE-Conditioned:</span> Based on Income Lab/Kitces research. First ~10 years from CAPE-similar starting points; remaining years unconditional block bootstrap. See model details panel for sample size caveats — with 99 years in three buckets, individual episodes can dominate entire tiers. Best used as directional context.</p>
-              <p className="mt-1"><span className="text-purple-400">Narrative MC:</span> Our original synthesis — regime transitions determine when markets shift; actual historical episodes play out how. Combines Markov regime models with block bootstrap. Not based on published research but designed to preserve both macro dynamics and within-episode coherence.</p></div>
+              <p><span className="text-gray-300">i.i.d. (Standard):</span> Independent annual sampling. Industry standard (Morningstar). Overstates tail risk by ignoring serial correlation.</p>
+              <p className="mt-1"><span className="text-gray-300">Block Bootstrap:</span> Contiguous multi-year blocks. Matches Portfolio Visualizer's approach. See Cogneau & Zakamouline (2013), "Block Bootstrap Methods and the Choice of Stocks for the Long Run," <em>Quantitative Finance</em>.</p>
+              <p className="mt-1"><span className="text-gray-300">Regime-Switching:</span> Markov chain on four regimes. See Ang & Bekaert (2002), "Regime Switches in Interest Rates," <em>Journal of Business & Economic Statistics</em>.</p>
+              <p className="mt-1"><span className="text-gray-300">CAPE-Conditioned:</span> Based on Fitzpatrick, D. & Tharp, D. (2023), "Evaluating Monte Carlo Forecast Accuracy," Income Lab / Kitces.com. Two-phase: first ~10 years from CAPE-similar starts, then unconditional bootstrap. See model details for sample size caveats.</p>
+              <p className="mt-1"><span className="text-purple-400">Narrative MC ★:</span> Original method. Regime transitions (Markov) determine when markets shift; actual historical episodes play out how. Combines regime-switching macro dynamics with block bootstrap micro dynamics. Not peer-reviewed.</p></div>
             <div><h4 className="text-gray-300 font-semibold mb-1">What This Tool Does Not Model</h4>
-              <p>Real retirement planning involves Social Security timing, tax-efficient withdrawal sequencing, healthcare and long-term care costs, dynamic spending needs, housing decisions, annuity/pension income, and estate planning. This tool models portfolio withdrawal mechanics in isolation. It is designed for education and research, not as a substitute for comprehensive financial planning.</p></div>
+              <p>Social Security timing, tax-efficient withdrawal sequencing, healthcare and long-term care costs, dynamic spending needs, housing decisions, annuity/pension income, estate planning, international diversification. This is an educational and research tool, not financial advice.</p></div>
+            <div><h4 className="text-gray-300 font-semibold mb-1">Key References</h4>
+              <ul className="list-disc list-inside space-y-0.5 text-gray-500">
+                <li>Bengen, W.P. (1994). "Determining Withdrawal Rates Using Historical Data." <em>Journal of Financial Planning</em>, 7(4), 171–180.</li>
+                <li>Guyton, J.T. & Klinger, W.J. (2006). "Decision Rules and Maximum Initial Withdrawal Rates." <em>Journal of Financial Planning</em>, 19(3), 49–57.</li>
+                <li>Kitces, M.E. & Pfau, W. (2015). "Retirement Risk, Rising Equity Glidepaths, and Valuation-Based Asset Allocation." <em>Journal of Financial Planning</em>, 28(3), 38–48.</li>
+                <li>Fitzpatrick, D. & Tharp, D. (2023). "Evaluating Monte Carlo Models for Retirement Planning." Income Lab / Kitces.com.</li>
+                <li>Benz, C., Ptak, J. & Rekenthaler, J. (2024). "The State of Retirement Income." Morningstar Research.</li>
+                <li>Dimson, E., Marsh, P. & Staunton, M. (2002). <em>Triumph of the Optimists</em>. Princeton University Press.</li>
+                <li>Shiller, R.J. Online Data. <span className="text-blue-400">econ.yale.edu/~shiller/data.htm</span></li>
+              </ul></div>
+            <div><h4 className="text-gray-300 font-semibold mb-1">Version History</h4>
+              <div className="space-y-0.5 text-gray-500">
+                <p><span className="text-gray-400">v1.1</span> – Unified single-page layout. Strategy and analysis method are now independent dropdowns with shared inputs. Single Strategy and Compare modes replace three-tab structure. Withdrawal rate unified across all strategies. In-app user guide and companion guide modal. Guardrails attribution (Guyton-Klinger).</p>
+                <p><span className="text-gray-400">v1.0</span> – Five simulation engines. Five withdrawal strategies. Three-tab layout (Historical, Monte Carlo, Compare). Shiller/FRED data, 1926–2024.</p>
+              </div></div>
           </div>)}
         </div>
       </div>
