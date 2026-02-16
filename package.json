@@ -4,12 +4,6 @@
   "version": "1.0.0",
   "description": "Open-source retirement withdrawal strategy simulator with 5 Monte Carlo methods. Replicates Bengen (1994), Morningstar, and Kitces/Income Lab approaches.",
   "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "devDependencies": {
-    "vite": "^5.0.0"
-  }
+  "scripts": {},
+  "devDependencies": {}
 }
